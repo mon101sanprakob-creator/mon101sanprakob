@@ -9,8 +9,8 @@ from shapely.ops import transform
 # ตั้งค่าหน้าเว็บ
 st.set_page_config(page_title="GPS 4-Point Area Measure", layout="wide", page_icon="📐")
 
-st.title("📐 แอปวัดพื้นที่อัจฉริยะ (ภาพดาวเทียมซูมพิกัดปัจจุบัน)")
-st.write("วิธีใช้: ระบบจะซูมแผนที่ไปที่ตำแหน่งของคุณ (จุดน้ำเงิน) จากนั้นให้ใช้นิ้วจิ้มปักหมุด 4 มุม เพื่อลากเส้นคำนวณพื้นที่")
+st.title("📐 แอปวัดพื้นที่อัจฉริยะ (พิกัดเรียลไทม์เห็นหลังคาบ้าน)")
+st.write("วิธีใช้: แผนที่จะซูมตามตำแหน่งจริงของคุณตลอดเวลา (จุดน้ำเงิน) เมื่อยืนถูกจุดแล้ว ใช้นิ้วจิ้มปักหมุด 4 มุมด้วยตัวเองเพื่อวัดพื้นที่")
 
 # --- ฟังก์ชันคำนวณพื้นที่และการแปลงหน่วย ---
 def calculate_polygon_area(lat_lons):
@@ -48,7 +48,7 @@ col1, col2, col3 = st.columns([1, 1, 1])
 
 with col1:
     if current_count < 4:
-        st.warning(f"📍 ปักหมุดไปแล้ว {current_count} / 4 จุด (กรุณาจิ้มบนแผนที่ให้ครบ 4 จุดเพื่อปิดกรอบ)")
+        st.warning(f"📍 ปักหมุดไปแล้ว {current_count} / 4 จุด (กรุณาจิ้มบนแผนที่ดาวเทียมให้ครบ 4 จุดเพื่อปิดกรอบ)")
     else:
         st.success("✅ ครบ 4 จุด สร้างกรอบพื้นที่สำเร็จ!")
 
@@ -66,27 +66,34 @@ if st.button("🔄 ล้างข้อมูลหมุดทั้งหม�
 
 st.markdown("---")
 
-# --- ส่วนที่ 2: แผนที่ภาพถ่ายดาวเทียมความละเอียดสูง ---
-st.markdown("### 🛰️ แผนที่ดาวเทียม (ใช้นิ้วจิ้มเพื่อปักหมุดรอบตัวคุณ)")
+# --- ส่วนที่ 2: แผนที่ภาพถ่ายดาวเทียมความละเอียดสูงแบบเรียลไทม์ ---
+st.markdown("### 🛰️ แผนที่ดาวเทียมเรียลไทม์ (ซูมตามตัวคุณอัตโนมัติ)")
 
-# ตั้งศูนย์กลางแผนที่ (ถ้ายังไม่จิ้ม จุดศูนย์กลางจะวิ่งไปหาพิกัดตัวเราผ่านระบบ LocateControl อัตโนมัติ)
+# ถ้าเริ่มจิ้มแล้ว ให้ล็อกศูนย์กลางที่จุดแรก แต่ถ้ายังไม่จิ้ม ให้แผนที่ปล่อยอิสระเพื่อให้ระบบดึง GPS ตัวเราขึ้นมาแทนกรุงเทพฯ
 map_center = st.session_state.survey_points[0] if current_count > 0 else [13.7563, 100.5018]
 
 m = folium.Map(
     location=map_center, 
-    zoom_start=19, # ซูมใกล้ระดับเห็นหลังคาบ้านทันที
+    zoom_start=19, 
     max_zoom=22,   
-    tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', # Google Satellite Hybrid
+    tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', # Google Satellite Hybrid คมชัดเห็นหลังคาบ้าน
     attr='Google'
 )
 
-# 🌟 ฟังก์ชันเปิดใช้งานระบบ GPS อัตโนมัติ (เปิดแอปปุ๊บ วิ่งหาตัวเราปั๊บ และโชว์จุดน้ำเงินทันที)
+# 🌟 การตั้งค่าระบบติดตามตัวเราแบบเรียลไทม์ (แก้ไขอาการค้างที่กรุงเทพฯ)
 folium.plugins = __import__('folium.plugins', fromlist=['LocateControl'])
 folium.plugins.LocateControl(
-    locateOptions={'enableHighAccuracy': True, 'maximumAge': 0}, # ดึงค่าจริงหน้างานไม่ใช้ค่าเก่าค้าง
-    keepCurrentZoomLevel=True,
-    setView='once', # สั่งให้วิ่งไปหาตำแหน่งเราอัตโนมัติ "เฉพาะตอนเปิดแอปครั้งแรก"
-    title="เลื่อนไปตำแหน่งปัจจุบันของคุณ"
+    locateOptions={
+        'enableHighAccuracy': True, # สั่งเปิดชิป GPS ค้นหาพิกัดความละเอียดสูงที่สุดจากมือถือ
+        'maximumAge': 0,            # ห้ามดึงค่าเก่าที่ค้างอยู่ในความจำมาใช้ ต้องเป็นค่าสดๆ เท่านั้น
+        'timeout': 10000            # ให้เวลาค้นหา 10 วินาที
+    },
+    keepCurrentZoomLevel=True,      # ล็อกระดับการซูมไว้ไม่ให้แผนที่เด้งซูมเข้าออกเอง
+    setView='always',              # 🌟 สั่งให้แผนที่ "วิ่งตามตัวเราตลอดเวลา" (Real-time) ตราบใดที่ยังไม่ได้ปักหมุด
+    flyTo=True,                    # เพิ่มเอฟเฟกต์การบินไปหาตัวเราอย่างนุ่มนวล
+    drawCircle=True,               # วาดวงกลมสีฟ้าบอกระยะความแม่นยำรอบตัวเรา
+    trackUserLocation=True,        # 🌟 เปิดโหมดเดินตามตัวเรา (ถ้าเราเดิน จุดน้ำเงินและแผนที่จะขยับตาม)
+    title="คลิกเพื่อล็อกพิกัดปัจจุบันของคุณ"
 ).add_to(m)
 
 # วาดหมุดสีส้มเด่นชัดที่เราจิ้มเองกับมือทีละจุด
@@ -108,14 +115,13 @@ if current_count >= 2:
         fill_opacity=0.35      
     ).add_to(m)
 
-# แรนเดอร์แผนที่บนเว็บ Streamlit
-map_data = st_folium(m, width="100%", height=550)
+# แรนเดอร์แผนที่บนเว็บ (ใส่ key เพื่อบังคับรีเฟรชหน้าจอตามค่าพิกัดใหม่)
+map_data = st_folium(m, width="100%", height=550, key=f"map_{current_count}")
 
 # ดักจับการจิ้มปักหมุดด้วยมือ
 if map_data and map_data.get("last_clicked"):
     clicked_coords = (map_data["last_clicked"]["lat"], map_data["last_clicked"]["lng"])
     
-    # จำกัดไว้สูงสุด 4 จุด และป้องกันจุดซ้ำซ้อน
     if current_count < 4:
         if not st.session_state.survey_points or st.session_state.survey_points[-1] != clicked_coords:
             st.session_state.survey_points.append(clicked_coords)
