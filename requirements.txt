@@ -3,4 +3,3 @@ streamlit-folium
 folium
 shapely
 pyproj
-geolocator
