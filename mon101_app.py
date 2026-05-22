@@ -9,8 +9,8 @@ from shapely.ops import transform
 # ตั้งค่าหน้าเว็บ
 st.set_page_config(page_title="GPS 4-Point Area Measure", layout="wide", page_icon="📐")
 
-st.title("📐 แอปวัดพื้นที่อัจฉริยะ (พิกัดเรียลไทม์เห็นหลังคาบ้าน)")
-st.write("วิธีใช้: แผนที่จะซูมตามตำแหน่งจริงของคุณตลอดเวลา (จุดน้ำเงิน) เมื่อยืนถูกจุดแล้ว ใช้นิ้วจิ้มปักหมุด 4 มุมด้วยตัวเองเพื่อวัดพื้นที่")
+st.title("📐 แอปวัดพื้นที่อัจฉริยะ (พิกัดเริ่มต้น ณ ตำแหน่งจริง)")
+st.write("วิธีใช้: ระบบจะดึงตำแหน่งจริงของคุณมาเปิดแผนที่ทันที จากนั้นใช้นิ้วจิ้มปักหมุด 4 มุมด้วยตัวเองเพื่อวัดพื้นที่")
 
 # --- ฟังก์ชันคำนวณพื้นที่และการแปลงหน่วย ---
 def calculate_polygon_area(lat_lons):
@@ -36,19 +36,53 @@ def convert_sqm_to_thai_unit(sqm):
     wa = remain / 4
     return f"{rai} ไร่ {ngan} งาน {wa:.1f} ตร.วา"
 
-# --- บันทึกพิกัดจุดรังวัดในระบบ (Session State) ---
+# --- บันทึกพิกัดในระบบ (Session State) ---
 if 'survey_points' not in st.session_state:
     st.session_state.survey_points = []
+if 'user_lat' not in st.session_state:
+    st.session_state.user_lat = None
+if 'user_lng' not in st.session_state:
+    st.session_state.user_lng = None
 
 current_count = len(st.session_state.survey_points)
+
+# 🌟 กลไกพิเศษ: ใช้สคริปต์ JavaScript บังคับให้มือถือหาพิกัดจริงให้เจอก่อนสร้างแผนที่
+if st.session_state.user_lat is None:
+    # โค้ดส่วนนี้จะทำงานผ่านระบบ HTML บังคับเรียก GPS ความแม่นยำสูงทันทีตั้งแต่เสี้ยววินาทีแรก
+    st.markdown("""
+        <script>
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                // ส่งค่าพิกัดจริงกลับมาให้เซิร์ฟเวอร์ Streamlit
+                const url = new URL(window.location.href);
+                url.searchParams.set('lat', lat);
+                url.searchParams.set('lng', lng);
+                window.parent.location.href = url.toString();
+            },
+            function(error) { console.error(error); },
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        );
+        </script>
+    """, unsafe_allowed_code=True)
+    
+    # อ่านค่าพิกัดที่ดักจับมาจาก URL
+    query_params = st.query_params
+    if 'lat' in query_params and 'lng' in query_params:
+        st.session_state.user_lat = float(query_params['lat'])
+        st.session_state.user_lng = float(query_params['lng'])
+        st.rerun()
 
 # --- ส่วนที่ 1: หน้าจอแสดงผลคะแนนและสถานะ ---
 st.markdown("### 📊 ผลการสำรวจกรอบพื้นที่")
 col1, col2, col3 = st.columns([1, 1, 1])
 
 with col1:
-    if current_count < 4:
-        st.warning(f"📍 ปักหมุดไปแล้ว {current_count} / 4 จุด (กรุณาจิ้มบนแผนที่ดาวเทียมให้ครบ 4 จุดเพื่อปิดกรอบ)")
+    if st.session_state.user_lat is None:
+        st.info("🌐 กำลังดึงพิกัด GPS หน้างานจริงของคุณ... (โปรดกด 'อนุญาต' แชร์ตำแหน่งหากระบบถาม)")
+    elif current_count < 4:
+        st.warning(f"📍 ปักหมุดไปแล้ว {current_count} / 4 จุด (กรุณาจิ้มบนแผนที่ให้ครบ 4 จุด)")
     else:
         st.success("✅ ครบ 4 จุด สร้างกรอบพื้นที่สำเร็จ!")
 
@@ -66,34 +100,33 @@ if st.button("🔄 ล้างข้อมูลหมุดทั้งหม�
 
 st.markdown("---")
 
-# --- ส่วนที่ 2: แผนที่ภาพถ่ายดาวเทียมความละเอียดสูงแบบเรียลไทม์ ---
-st.markdown("### 🛰️ แผนที่ดาวเทียมเรียลไทม์ (ซูมตามตัวคุณอัตโนมัติ)")
+# --- ส่วนที่ 2: แผนที่ภาพถ่ายดาวเทียมที่จะเริ่มต้น ณ จุดที่คุณยืนอยู่จริง ---
+st.markdown("### 🛰️ แผนที่ดาวเทียมเรียลไทม์ (พิกัดเริ่มต้นตรงตัวคุณพอดี)")
 
-# ถ้าเริ่มจิ้มแล้ว ให้ล็อกศูนย์กลางที่จุดแรก แต่ถ้ายังไม่จิ้ม ให้แผนที่ปล่อยอิสระเพื่อให้ระบบดึง GPS ตัวเราขึ้นมาแทนกรุงเทพฯ
-map_center = st.session_state.survey_points[0] if current_count > 0 else [13.7563, 100.5018]
+# ตั้งศูนย์กลางแผนที่: ถ้าดักจับพิกัดตัวเราได้แล้ว ให้ใช้พิกัดเราทันทีตั้งแต่แรก! (ถ้ายังไม่ได้ ถึงจะใช้กรุงเทพฯ สำรอง)
+if current_count > 0:
+    map_center = st.session_state.survey_points[0]
+elif st.session_state.user_lat is range and st.session_state.user_lng is not None:
+    map_center = [st.session_state.user_lat, st.session_state.user_lng]
+else:
+    map_center = [13.7563, 100.5018] # รอสัญญาณแวบแรก
 
 m = folium.Map(
     location=map_center, 
-    zoom_start=19, 
+    zoom_start=19, # เปิดมาซูมเห็นหลังคาบ้านคุณเลย
     max_zoom=22,   
-    tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', # Google Satellite Hybrid คมชัดเห็นหลังคาบ้าน
+    tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', 
     attr='Google'
 )
 
-# 🌟 การตั้งค่าระบบติดตามตัวเราแบบเรียลไทม์ (แก้ไขอาการค้างที่กรุงเทพฯ)
+# เปิดระบบโชว์จุดน้ำเงินเรียลไทม์ และขยับตามตัวเรา
 folium.plugins = __import__('folium.plugins', fromlist=['LocateControl'])
 folium.plugins.LocateControl(
-    locateOptions={
-        'enableHighAccuracy': True, # สั่งเปิดชิป GPS ค้นหาพิกัดความละเอียดสูงที่สุดจากมือถือ
-        'maximumAge': 0,            # ห้ามดึงค่าเก่าที่ค้างอยู่ในความจำมาใช้ ต้องเป็นค่าสดๆ เท่านั้น
-        'timeout': 10000            # ให้เวลาค้นหา 10 วินาที
-    },
-    keepCurrentZoomLevel=True,      # ล็อกระดับการซูมไว้ไม่ให้แผนที่เด้งซูมเข้าออกเอง
-    setView='always',              # 🌟 สั่งให้แผนที่ "วิ่งตามตัวเราตลอดเวลา" (Real-time) ตราบใดที่ยังไม่ได้ปักหมุด
-    flyTo=True,                    # เพิ่มเอฟเฟกต์การบินไปหาตัวเราอย่างนุ่มนวล
-    drawCircle=True,               # วาดวงกลมสีฟ้าบอกระยะความแม่นยำรอบตัวเรา
-    trackUserLocation=True,        # 🌟 เปิดโหมดเดินตามตัวเรา (ถ้าเราเดิน จุดน้ำเงินและแผนที่จะขยับตาม)
-    title="คลิกเพื่อล็อกพิกัดปัจจุบันของคุณ"
+    locateOptions={'enableHighAccuracy': True, 'maximumAge': 0},
+    keepCurrentZoomLevel=True,
+    setView='always', # ล็อกหน้าจอให้อยู่กับตัวเราตลอดเวลาจนกว่าจะกดปุ่มปักหมุด
+    trackUserLocation=True, 
+    title="พิกัดปัจจุบันของคุณ"
 ).add_to(m)
 
 # วาดหมุดสีส้มเด่นชัดที่เราจิ้มเองกับมือทีละจุด
@@ -115,7 +148,7 @@ if current_count >= 2:
         fill_opacity=0.35      
     ).add_to(m)
 
-# แรนเดอร์แผนที่บนเว็บ (ใส่ key เพื่อบังคับรีเฟรชหน้าจอตามค่าพิกัดใหม่)
+# แรนเดอร์แผนที่บนเว็บ Streamlit
 map_data = st_folium(m, width="100%", height=550, key=f"map_{current_count}")
 
 # ดักจับการจิ้มปักหมุดด้วยมือ
