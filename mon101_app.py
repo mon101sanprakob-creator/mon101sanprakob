@@ -46,16 +46,15 @@ if 'user_lng' not in st.session_state:
 
 current_count = len(st.session_state.survey_points)
 
-# 🌟 กลไกพิเศษ: ใช้สคริปต์ JavaScript บังคับให้มือถือหาพิกัดจริงให้เจอก่อนสร้างแผนที่
+# 🌟 กลไกพิเศษ: ใช้สคริปต์ JavaScript ดึงพิกัดจริงให้เจอก่อนสร้างแผนที่ (แก้ไขพารามิเตอร์เป็น unsafe_allow_html=True แล้ว)
 if st.session_state.user_lat is None:
-    # โค้ดส่วนนี้จะทำงานผ่านระบบ HTML บังคับเรียก GPS ความแม่นยำสูงทันทีตั้งแต่เสี้ยววินาทีแรก
     st.markdown("""
         <script>
         navigator.geolocation.getCurrentPosition(
             function(position) {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
-                // ส่งค่าพิกัดจริงกลับมาให้เซิร์ฟเวอร์ Streamlit
+                // ส่งค่าพิกัดจริงกลับมาที่ URL
                 const url = new URL(window.location.href);
                 url.searchParams.set('lat', lat);
                 url.searchParams.set('lng', lng);
@@ -65,7 +64,7 @@ if st.session_state.user_lat is None:
             { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
         );
         </script>
-    """, unsafe_allowed_code=True)
+    """, unsafe_allow_html=True)
     
     # อ่านค่าพิกัดที่ดักจับมาจาก URL
     query_params = st.query_params
@@ -103,17 +102,17 @@ st.markdown("---")
 # --- ส่วนที่ 2: แผนที่ภาพถ่ายดาวเทียมที่จะเริ่มต้น ณ จุดที่คุณยืนอยู่จริง ---
 st.markdown("### 🛰️ แผนที่ดาวเทียมเรียลไทม์ (พิกัดเริ่มต้นตรงตัวคุณพอดี)")
 
-# ตั้งศูนย์กลางแผนที่: ถ้าดักจับพิกัดตัวเราได้แล้ว ให้ใช้พิกัดเราทันทีตั้งแต่แรก! (ถ้ายังไม่ได้ ถึงจะใช้กรุงเทพฯ สำรอง)
+# ตั้งศูนย์กลางแผนที่: ถ้าจิ้มแล้วยึดจุดแรก ถ้าเพิ่งเปิดแอปและเจอพิกัดเราให้ยึดพิกัดเราทันที
 if current_count > 0:
     map_center = st.session_state.survey_points[0]
-elif st.session_state.user_lat is range and st.session_state.user_lng is not None:
+elif st.session_state.user_lat is not None and st.session_state.user_lng is not None:
     map_center = [st.session_state.user_lat, st.session_state.user_lng]
 else:
-    map_center = [13.7563, 100.5018] # รอสัญญาณแวบแรก
+    map_center = [13.7563, 100.5018] # ค่าสำรองแวบแรกสุด
 
 m = folium.Map(
     location=map_center, 
-    zoom_start=19, # เปิดมาซูมเห็นหลังคาบ้านคุณเลย
+    zoom_start=19, # เปิดมาซูมใกล้ระดับหลังคาบ้านคุณเลย
     max_zoom=22,   
     tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', 
     attr='Google'
