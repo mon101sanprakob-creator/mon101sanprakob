@@ -7,13 +7,12 @@ from functools import partial
 import shapely.ops as ops
 import pandas as pd
 import datetime
-from folium.plugins import LocateControl  # ✅ นำเข้าตัวจับพิกัดตั้งแต่เริ่มเพื่อความปลอดภัย
 
 # ตั้งค่าหน้าจอเป็นแบบกว้างเพื่อให้เห็นแผนที่ชัดๆ
 st.set_page_config(layout="wide", page_title="ระบบรังวัดดาวเทียมตามพิกัดจริง")
 
-st.title("🌾 ระบบรังวัดที่นาผ่านดาวเทียม (ดักจับพิกัดปัจจุบัน)")
-st.write("แอปพลิเคชันจะจับตำแหน่งที่คุณยืนอยู่ปัจจุบันโดยอัตโนมัติ เพื่อความแม่นยำในการเริ่มจับขอบแปลงนา")
+st.title("🌾 ระบบรังวัดที่นาผ่านดาวเทียม (เวอร์ชันเสถียร)")
+st.write("เครื่องมือคำนวณพื้นที่และค่าจ้างอย่างโปร่งใสตามพิกัดสากล ตรวจสอบได้แม่นยำทั้งสองฝ่าย")
 
 # 1. จัดการระบบความจำ (Session State)
 if 'polygon_coords' not in st.session_state:
@@ -44,38 +43,28 @@ with st.sidebar:
 col_map, col_result = st.columns([2, 1.2])
 
 with col_map:
-    st.subheader("🗺️ 1. แผนที่ดาวเทียมตรงจุดที่คุณอยู่")
-    st.caption("💡 แผนที่จะขยับมาหาตำแหน่งปัจจุบันของคุณอัตโนมัติ จากนั้นคลิกปักหมุดล้อมรอบแปลงนา")
+    st.subheader("🗺️ 1. แผ่นที่ดาวเทียมความละเอียดสูง")
+    st.caption("💡 วิธีใช้: เลื่อนแผนที่ไปยังที่นาของคุณ ซูมเข้าไปใกล้ๆ แล้วคลิกปักหมุดล้อมรอบแปลงนาให้ครบทุกมุม")
 
-    # พิกัดเริ่มต้น (กรณียังจับ GPS ไม่ได้ จะใช้ค่ากลางประเทศไทยก่อน)
+    # พิกัดเริ่มต้น (ยึดตามหมุดแรกที่กด หรือถ้ายังไม่กดจะเริ่มที่กลางประเทศไทย)
     start_lat, start_lng = 16.8200, 100.2600
-    
-    # หากมีการคลิกปักหมุดแล้ว ให้แผนที่ยึดตามหมุดล่าสุด
     if st.session_state.polygon_coords:
         start_lat, start_lng = st.session_state.polygon_coords[-1]
 
-    # สร้างแผนที่ Folium โดยใช้ภาพดาวเทียม Google Hybrid (เห็นทั้งภาพถ่ายและชื่อสถานที่)
+    # สร้างแผนที่ดาวเทียม Google Hybrid
     m = folium.Map(
         location=[start_lat, start_lng], 
-        zoom_start=17,  # ซูมเข้าไปใกล้ระดับแปลงนา
+        zoom_start=15,  
         tiles="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}", 
         attr="Google Hybrid"
     )
-
-    # ✅ แก้ไขจุดนี้: เรียกใช้งานปุ่มจับพิกัดปัจจุบันโดยไม่ใช้คำสั่งล้างปลั๊กอินเก่า
-    LocateControl(
-        auto_start=True, # เปิดปุ๊บวิ่งไปหาตำแหน่งปัจจุบันปั๊บ
-        fly_to=True,
-        keep_current_zoom_level=False,
-        strings={"title": "🔍 ค้นหาตำแหน่งของฉัน", "metersUnit": "เมตร"}
-    ).add_to(m)
 
     # วาดเส้นและระบายสีทับแปลงนาเมื่อปักหมุดตั้งแต่ 2 จุดขึ้นไป
     if len(st.session_state.polygon_coords) > 1:
         if len(st.session_state.polygon_coords) >= 3:
             folium.Polygon(
                 locations=st.session_state.polygon_coords,
-                color="#00FF00",  # สีเขียวนีออนสะท้อนแสง เห็นชัดเจนไม่สับสน
+                color="#00FF00",  
                 weight=3,
                 fill=True,
                 fill_color="#00FF00",
@@ -117,31 +106,27 @@ with col_map:
     if map_data and map_data.get("last_clicked"):
         clicked_coord = [map_data["last_clicked"]["lat"], map_data["last_clicked"]["lng"]]
         
-        # ป้องกันไม่ให้คลิกซ้ำจุดเดิม
         if not st.session_state.polygon_coords or st.session_state.polygon_coords[-1] != clicked_coord:
             st.session_state.polygon_coords.append(clicked_coord)
             st.rerun()
 
-# 3. ฝั่งคำนวณและแสดงผลลัพธ์ (เน้นหน่วย ไร่-งาน-ตารางวา ขึ้นก่อน)
+# 3. ฝั่งคำนวณและแสดงผลลัพธ์ (ไร่-งาน-ตารางวา)
 with col_result:
     st.subheader("📊 2. สรุปเนื้อที่นาจริง")
     
     if len(st.session_state.polygon_coords) >= 3:
-        # --- สูตรคำนวณพิกัดภูมิศาสตร์สากลเพื่อความแม่นยำสูง ---
         geojson_coords = [(c[1], c[0]) for c in st.session_state.polygon_coords]
         poly = Polygon(geojson_coords)
         
-        # แปลงพิกัดโลกโค้งเป็นระนาบหน่วยเมตร (EPSG:3857) เพื่อหาพื้นที่ตารางเมตรที่แท้จริง
-        geom_area = ops.transform(
-            partial(
-                pyproj.transform,
-                pyproj.Proj(init='epsg:4326'), 
-                pyproj.Proj(init='epsg:3857')  
-            ),
-            poly
-        ).area
+        # ✅ ปรับปรุงจุดนี้: ใช้ pyproj.Transformer ซึ่งเป็นวิธีใหม่ที่เป็นมาตรฐาน ป้องกันการ Error บนเซิร์ฟเวอร์
+        wgs84 = pyproj.CRS('EPSG:4326')
+        web_mercator = pyproj.CRS('EPSG:3857')
+        transformer = pyproj.Transformer.from_crs(wgs84, web_mercator, always_xy=True).transform
+        
+        # คำนวณพื้นที่ระนาบเมตรสากล
+        geom_area = ops.transform(transformer, poly).area
 
-        # แปลงจาก ตารางเมตร -> หน่วยไทย (ไร่ - งาน - ตารางวา)
+        # แปลงเป็นหน่วย ไร่ - งาน - ตารางวา
         total_sq_wa = geom_area / 4
         rai = int(total_sq_wa // 400)
         ngarn = int((total_sq_wa % 400) // 100)
@@ -151,7 +136,7 @@ with col_result:
         total_rai_decimal = geom_area / 1600
         total_cash = total_rai_decimal * price_per_rai
 
-        # โชว์หน่วยวัด ไร่ งาน ตารางวา ตัวใหญ่ๆ นำหน้าชัดเจนตามคำขอครับ
+        # โชว์หน่วยวัด ไร่ งาน ตารางวา
         st.success(f"""
         ### 📐 ขนาดพื้นที่วัดได้จริง:
         # {rai} ไร่  {ngarn} งาน  {sq_wa:.2f} ตารางวา
@@ -159,7 +144,7 @@ with col_result:
         
         st.metric(label=f"💰 คิดเป็นค่าบริการสุทธิ (ไร่ละ {price_per_rai:,} บาท)", value=f"{total_cash:,.2f} บาท")
         
-        # แสดงตารางพิกัดแต่ละหมุดเพื่อเป็นหลักฐานความโปร่งใส ยืนยันว่าไม่ได้เมคตัวเลขขึ้นมาเอง
+        # ตารางพิกัดอ้างอิงยืนยันความโปร่งใส
         st.write("📋 **พิกัดดาวเทียมแต่ละหมุด (ห้ามโกง):**")
         df_coords = pd.DataFrame(
             st.session_state.polygon_coords, 
@@ -169,8 +154,7 @@ with col_result:
         st.dataframe(df_coords, use_container_width=True)
         
         st.info(f"🕒 **วันเวลาที่รังวัดสำเร็จ:** {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
-        st.warning("📸 **แนะแนวทาง:** ถ่ายรูปหน้าจอนี้เก็บไว้ทั้งคนขับรถและเจ้าของนา ตัวเลขนี้คำนวณตามจริงจากดาวเทียม ไม่มีใครโกงใครได้แน่นอนครับ")
+        st.warning("📸 **แนะแนวทาง:** ถ่ายรูปหน้าจอนี้เก็บไว้ทั้งคนขับรถและเจ้าของนา เพื่อใช้เป็นหลักฐานที่ยุติธรรมร่วมกันครับ")
 
-    # ✅ แก้ไขจุดนี้: ขยับเว้นวรรคถอยหลังให้สอดคล้องกับโครงสร้างเงื่อนไข `else:` ของระบบ
     else:
-        st.info("💡 **กำลังรอพิกัดจากคุณ...** โปรดกดอนุญาตให้แอปเข้าถึงตำแหน่ง (ถ้ามี) แผนที่จะซูมมาที่ตัวคุณทันที จากนั้นเริ่มคลิกปักหมุดให้ครบอย่างน้อย 3 จุดล้อมรอบที่นาได้เลยครับ")
+        st.info("💡 **ระบบพร้อมใช้งานแล้ว!** กรุณาเลื่อนแผนที่ดาวเทียมไปยังตำแหน่งแปลงนาของคุณ จากนั้นเริ่มคลิกปักหมุดตามขอบคันนาให้ครบอย่างน้อย 3 จุด ระบบจะคำนวณพื้นที่ให้ทันทีครับ")
