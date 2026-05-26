@@ -8,60 +8,71 @@ from geopy.geocoders import Nominatim
 from streamlit_js_eval import streamlit_js_eval
 
 st.set_page_config(layout="wide")
-st.title("📌 แอปวัดพื้นที่ดินดาวเทียมแบบระบุสถานที่")
+st.title("📌 แอปวัดพื้นที่ดินดาวเทียมแบบไฮบริด")
 
-# 1. โค้ดดึงค่าละติจูดและลองจิจูดปัจจุบันจากระบบ GPS ของอุปกรณ์โดยตรง
-st.subheader("📡 ระบบดึงพิกัด GPS ปัจจุบัน")
-with st.expander("คลิกที่นี่หากต้องการตรวจสอบหรือปรับเปลี่ยนพิกัดด้วยตนเอง", expanded=True):
-    # ใช้ streamlit_js_eval ดึงพิกัดสดจากเบราว์เซอร์/มือถือ
-    gps_data = streamlit_js_eval(data_name='geocode', reason='ขอเข้าถึงพิกัด GPS เพื่อระบุตำแหน่งบ้านของคุณ', key='get_current_gps')
-    
-    # ค่าเริ่มต้นกรณี GPS ยังไม่โหลด (พิกัดกลางประเทศไทย)
-    default_lat, default_lng = 13.7563, 100.5018 
-    
+# เรียกใช้ตัวค้นหาพิกัด
+geolocator = Nominatim(user_agent="mon101_land_measure_v3")
+
+# 1. สร้างระบบค้นหาตำแหน่ง (พิมพ์ค้นหาได้เลย ไม่ต้องง้อ GPS เบราว์เซอร์)
+st.subheader("🔍 ค้นหาและปักหมุดตำแหน่งของคุณ")
+search_query = st.text_input("พิมพ์ชื่อสถานที่ เช่น 'อ.เมือง จ.เชียงใหม่' หรือ 'วัดพระแก้ว' หรือ 'ชื่อหมู่บ้าน ตำบล จังหวัด' ของคุณ :", "")
+
+# ค่าพิกัดเริ่มต้น (ถ้าไม่มีการค้นหา และ GPS ไม่ทำงาน จะอยู่ตรงนี้)
+current_lat, current_lng = 13.7563, 100.5018 
+location_found = False
+
+# ถ้าผู้ใช้พิมพ์ค้นหา ให้วิ่งไปที่นั่นทันที
+if search_query:
+    try:
+        geo_search = geolocator.geocode(search_query, timeout=10)
+        if geo_search:
+            current_lat = geo_search.latitude
+            current_lng = geo_search.longitude
+            location_found = True
+            st.success(f"📍 เจอตำแหน่งแล้ว! กำลังวาร์ปไปที่: {geo_search.address}")
+        else:
+            st.error("❌ ไม่พบชื่อสถานที่นี้ กรุณาพิมพ์ให้ละเอียดขึ้น เช่น ใส่ชื่อตำบล หรืออำเภอ เพิ่มเติมครับ")
+    except Exception:
+        st.warning("⚠️ ระบบค้นหาขัดข้องชั่วคราว กำลังพยายามใช้ระบบดึงพิกัดอัตโนมัติ...")
+
+# ถ้าผู้ใช้ไม่ได้พิมพ์ค้นหา ให้ลองดึงค่า GPS สดจากเครื่อง (เผื่อกดอนุญาตแล้ว)
+if not location_found:
+    gps_data = streamlit_js_eval(data_name='geocode', reason='ขอพิกัดเพื่อระบุตำแหน่งบ้าน', key='get_current_gps_v3')
     if gps_data and 'coords' in gps_data:
-        default_lat = gps_data['coords']['latitude']
-        default_lng = gps_data['coords']['longitude']
-        st.success("🎯 ดึงพิกัดจาก GPS ของคุณสำเร็จแล้ว!")
-    else:
-        st.warning("⚠️ กำลังค้นหาพิกัด GPS... (หากหมุดไม่ตรง โปรดกด 'อนุญาตแชร์ตำแหน่ง' ที่มุมบนของเบราว์เซอร์ หรือกรอกพิกัดเองด้านล่าง)")
+        current_lat = gps_data['coords']['latitude']
+        current_lng = gps_data['coords']['longitude']
 
-    col1, col2 = st.columns(2)
-    with col1:
-        current_lat = st.number_input("ค่าละติจูด (Latitude)", value=default_lat, format="%.6f")
-    with col2:
-        current_lng = st.number_input("ค่าลองจิจูด (Longitude)", value=default_lng, format="%.6f")
+# ช่องแสดงและปรับแต่งตัวเลขพิกัดแบบละเอียด
+with st.expander("ตรวจสอบ/กรอกตัวเลขพิกัดละติจูด ลองจิจูด เองคลิกที่นี่"):
+    current_lat = st.number_input("ค่าละติจูด (Latitude)", value=current_lat, format="%.6f")
+    current_lng = st.number_input("ค่าลองจิจูด (Longitude)", value=current_lng, format="%.6f")
 
-# 2. ค้นหาชื่อสถานที่และที่อยู่จากพิกัด (Reverse Geocoding)
-address_text = "กำลังค้นหาชื่อสถานที่จากฐานข้อมูล..."
+# 2. ค้นหาชื่อที่อยู่ปัจจุบันมาแสดงผล
 try:
-    geolocator = Nominatim(user_agent="mon101_land_measure_app")
     geo_location = geolocator.reverse(f"{current_lat}, {current_lng}", timeout=5)
-    if geo_location:
-        address_text = geo_location.address
+    address_text = geo_location.address if geo_location else "พิกัดระบุบนแผนที่แล้ว"
 except Exception:
-    address_text = "แสดงผลบนแผนที่ดาวเทียมไฮบริดแล้ว"
+    address_text = "แสดงผลบนแผนที่ดาวเทียมไฮบริด"
 
-st.info(f"🏠 **สถานที่ปัจจุบันของคุณ:** {address_text}")
-st.caption("🗺️ **วิธีใช้นิ้วลากเส้น:** คลิกเครื่องมือรูปห้าเหลี่ยม (Draw a polygon) ที่มุมซ้ายบนของแผนที่ จากนั้นใช้นิ้วจิ้มลากเส้นล้อมรอบแปลงที่ดิน เมื่อเสร็จแล้วให้กดปุ่มคำนวณด้านล่าง")
+st.info(f"🏠 **พิกัดปัจจุบันบนแผนที่:** {address_text}")
 
-# 3. สร้างแผนที่ดาวเทียมแบบ Hybrid (เห็นหลังคาบ้าน + เห็นชื่อสถานที่และถนน)
+# 3. สร้างแผนที่ดาวเทียมแบบ Hybrid (เห็นหลังคาบ้าน + มีชื่อถนน/สถานที่บอกชัดเจน)
 m = folium.Map(
     location=[current_lat, current_lng], 
-    zoom_start=18, # ซูมใกล้ระดับเห็นหลังคาบ้าน
-    tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', # lyrs=y คือ Google Satellite Hybrid (ดาวเทียม + ชื่อสถานที่/ถนน)
+    zoom_start=18, # ซูมระดับเห็นสังกะสี/หลังคาบ้าน
+    tiles='https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', # Google Hybrid
     attr='Google Maps'
 )
 
-# ปักหมุดสีแดงตรงจุดพิกัดปัจจุบัน
+# ปักหมุดสีแดง
 folium.Marker(
     [current_lat, current_lng],
-    popup=f"ตำแหน่งของคุณ\n{current_lat}, {current_lng}",
-    tooltip="คุณอยู่ที่นี่",
+    popup=f"พิกัด: {current_lat}, {current_lng}",
+    tooltip="จุดพิกัดหลัก",
     icon=folium.Icon(color="red", icon="home")
 ).add_to(m)
 
-# เพิ่มเครื่องมือสำหรับวาด/ลากเส้นบนแผนที่
+# เพิ่มเครื่องมือวาดเส้นล้อมรอบที่ดิน (รูปห้าเหลี่ยมมุมซ้ายบน)
 folium.plugins.Draw(
     export=False,
     position='topleft',
@@ -75,21 +86,18 @@ folium.plugins.Draw(
     }
 ).add_to(m)
 
-# แสดงผลแผนที่ออกหน้าจอ
-output = st_folium(m, width=1000, height=550, key="map_layer")
+# แสดงแผนที่บนหน้าเว็บ
+output = st_folium(m, width=1000, height=550, key="map_v3")
 
-# 4. ส่วนคำนวณพื้นที่ (ไร่-งาน-ตารางวา) เมื่อผู้ใช้กดปุ่มยืนยัน
+# 4. ปุ่มยืนยันและคำนวณพื้นที่เป็นไร่
 st.write("---")
 if st.button("✅ ยืนยันลากเส้นเสร็จสิ้น และคำนวณพื้นที่", type="primary"):
     if output and output.get("all_drawings") is not None and len(output["all_drawings"]) > 0:
-        # ดึงพิกัดของรูปทรงล่าสุดที่ผู้ใช้วาด
         geo_data = output["all_drawings"][-1]
         coordinates = geo_data['geometry']['coordinates'][0]
         
         if len(coordinates) >= 3:
             poly = Polygon(coordinates)
-            
-            # แปลงค่าพิกัดพิกัดโลก (องศา) ให้เป็นเมตรตามมาตรฐานประเทศไทย (UTM Zone 47N)
             wgs84 = pyproj.CRS('EPSG:4326')
             utm = pyproj.CRS('EPSG:32647') 
             project = pyproj.Transformer.from_crs(wgs84, utm, always_xy=True).transform
@@ -98,16 +106,15 @@ if st.button("✅ ยืนยันลากเส้นเสร็จสิ�
             area_sq_meters = utm_poly.area
             total_wa = area_sq_meters / 4
             
-            # แปลงเป็นหน่วย ไร่ - งาน - ตารางวา
             rai = int(total_wa // 400)
             remaining_wa = total_wa % 400
             ngan = int(remaining_wa // 100)
             wa = remaining_wa % 100
             
-            st.success(f"🎉 คำนวณพื้นที่ดินเสร็จเรียบร้อย!")
-            st.metric(label="ขนาดพื้นที่แปลงที่ดิน", value=f"{rai} ไร่  {ngan} งาน  {wa:.1f} ตารางวา")
-            st.text(f"(คิดเป็นพื้นที่รวมทั้งหมด: {area_sq_meters:,.2f} ตารางเมตร)")
+            st.success(f"🎉 คำนวณพื้นที่ดินสำเร็จ!")
+            st.metric(label="ขนาดพื้นที่แปลงที่ดินของคุณ", value=f"{rai} ไร่  {ngan} งาน  {wa:.1f} ตารางวา")
+            st.text(f"(คิดเป็น {area_sq_meters:,.2f} ตารางเมตร)")
         else:
-            st.warning("⚠️ กรุณาลากเส้นต่อกันให้เป็นรูปปิด (อย่างน้อย 3 จุดขึ้นไป) ก่อนกดคำนวณพื้นที่")
+            st.warning("⚠️ กรุณาใช้นิ้วลากเส้นต่อกันให้เป็นรูปปิด (อย่างน้อย 3 จุดขึ้นไป)")
     else:
-        st.error("❌ ไม่พบเส้นวาดบนแผนที่ กรุณาใช้เครื่องมือรูปห้าเหลี่ยมทางซ้ายบนเพื่อลากเส้นก่อนครับ")
+        st.error("❌ ไม่พบเส้นที่วาด กรุณาคลิกเครื่องมือรูปห้าเหลี่ยมทางซ้ายบนของแผนที่แล้วลากเส้นก่อนครับ")
