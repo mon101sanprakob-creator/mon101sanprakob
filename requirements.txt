@@ -4,3 +4,9 @@ shapely
 pyproj
 geopy
 streamlit-js-eval
+streamlit
+streamlit-option-menu
+pandas
+numpy
+plotly
+Pillow
