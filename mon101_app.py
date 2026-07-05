@@ -100,6 +100,11 @@ lunar_day = st.slider(
 15,
 1
 )
+st.divider()
+
+st.markdown("## วิธีคำนวณ")
+
+st.code(explain(result))
 fig = go.Figure(go.Indicator(
 
     mode="gauge+number",
