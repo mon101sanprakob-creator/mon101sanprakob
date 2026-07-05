@@ -99,7 +99,35 @@ lunar_day = st.slider(
 15,
 1
 )
+fig = go.Figure(go.Indicator(
 
+    mode="gauge+number",
+
+    value=result["energy"],
+
+    title={"text":"SYNAPSE ENERGY"},
+
+    gauge={
+
+        "axis":{"range":[0,100]},
+
+        "bar":{"color":"gold"},
+
+        "steps":[
+
+            {"range":[0,30],"color":"#440000"},
+
+            {"range":[30,70],"color":"#222244"},
+
+            {"range":[70,100],"color":"#003300"}
+
+        ]
+
+    }
+
+))
+
+st.plotly_chart(fig,use_container_width=True)
 if st.button("🚀 CALCULATE"):
 
     st.success("เวอร์ชันแรกกำลังคำนวณ...")
