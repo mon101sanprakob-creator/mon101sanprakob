@@ -1,0 +1,174 @@
+"""
+###############################################################
+#
+# SYNAPSE MATHEMATICAL ENGINE
+#
+# VERSION : 1.0
+#
+###############################################################
+"""
+
+import math
+
+PHI = 1.618033988749895
+
+MOON_CYCLE = 29.530588
+
+PI = math.pi
+
+E = math.e
+
+
+class MathEngine:
+
+    def __init__(self):
+
+        self.phi = PHI
+
+        self.moon = MOON_CYCLE
+
+    # ------------------------------------
+
+    def golden_ratio(self, value):
+
+        return value * self.phi
+
+    # ------------------------------------
+
+    def golden_square(self, value):
+
+        return value * (self.phi ** 2)
+
+    # ------------------------------------
+
+    def moon_weight(self, value):
+
+        return value * self.moon
+
+    # ------------------------------------
+
+    def root_phi(self):
+
+        return math.sqrt(self.phi)
+
+    # ------------------------------------
+
+    def lunar_weight(self, value):
+
+        return value * self.root_phi()
+
+    # ------------------------------------
+
+    def digital_root(self, number):
+
+        number = abs(int(number))
+
+        while number >= 10:
+
+            number = sum(int(x) for x in str(number))
+
+        return number
+
+    # ------------------------------------
+
+    def fibonacci(self, n):
+
+        a = 0
+
+        b = 1
+
+        result = []
+
+        for _ in range(n):
+
+            result.append(a)
+
+            a, b = b, a + b
+
+        return result
+
+    # ------------------------------------
+
+    def normalize(self, value, low, high):
+
+        return (value-low)/(high-low)
+
+    # ------------------------------------
+
+    def percentage(self, value, max_value):
+
+        return (value/max_value)*100
+
+    # ------------------------------------
+
+    def frequency(self, value):
+
+        return 432 + (value % 96)
+
+    # ------------------------------------
+
+    def vibration(self, value):
+
+        return math.sin(value)
+
+    # ------------------------------------
+
+    def energy(self, total):
+
+        return total % 100
+
+    # ------------------------------------
+
+    def synapse_formula(
+
+        self,
+
+        weekday,
+
+        month,
+
+        zodiac,
+
+        lunar
+
+    ):
+
+        day_weight = self.golden_ratio(weekday)
+
+        month_weight = self.moon_weight(month)
+
+        zodiac_weight = self.golden_square(zodiac)
+
+        lunar_weight = self.lunar_weight(lunar)
+
+        total = (
+
+            day_weight +
+
+            month_weight +
+
+            zodiac_weight +
+
+            lunar_weight
+
+        )
+
+        return {
+
+            "day":day_weight,
+
+            "month":month_weight,
+
+            "zodiac":zodiac_weight,
+
+            "lunar":lunar_weight,
+
+            "total":total,
+
+            "energy":self.energy(total),
+
+            "root":self.digital_root(total),
+
+            "frequency":self.frequency(total)
+
+      }
