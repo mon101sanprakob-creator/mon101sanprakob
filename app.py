@@ -1,15 +1,14 @@
 import streamlit as st  # แก้ไขตรงนี้
+import streamlit as st
 import sys
 import os
 
 # บังคับให้ Python มองเห็นโฟลเดอร์ปัจจุบันและโฟลเดอร์ย่อยทั้งหมด
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# นำเข้าค่าคงที่และ Engine
-# ❌ แบบเดิม (พิมพ์ตกตัว R ท้ายประโยค)
-from engine.constants import WEEKDAYS, ZODIAC_SIGNS, COLOR_PALETTE, ENTERTAINMENT_DISCLAIME
-
-#  แบบที่ถูกต้อง (เติมตัว R ให้สมบูรณ์)
+# นำเข้าค่าคงที่และ Engine ให้ถูกต้องตามโครงสร้างระบบ
+from engine.constants import WEEKDAYS, ZODIAC_SIGNS, COLOR_PALETTE, ENTERTAINMENT_DISCLAIMER
+from engine import SynapseEngine
 from engine.constants import WEEKDAYS, ZODIAC_SIGNS, COLOR_PALETTE, ENTERTAINMENT_DISCLAIMER
 from engine import SynapseEngine
 # ... โค้ดส่วนที่เหลือเหมือนเดิมได้เลยครับ ...
