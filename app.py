@@ -6,6 +6,10 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # นำเข้าค่าคงที่และ Engine
+# ❌ แบบเดิม (พิมพ์ตกตัว R ท้ายประโยค)
+from engine.constants import WEEKDAYS, ZODIAC_SIGNS, COLOR_PALETTE, ENTERTAINMENT_DISCLAIME
+
+#  แบบที่ถูกต้อง (เติมตัว R ให้สมบูรณ์)
 from engine.constants import WEEKDAYS, ZODIAC_SIGNS, COLOR_PALETTE, ENTERTAINMENT_DISCLAIMER
 from engine import SynapseEngine
 # ... โค้ดส่วนที่เหลือเหมือนเดิมได้เลยครับ ...
