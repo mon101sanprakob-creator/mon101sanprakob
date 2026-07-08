@@ -1,14 +1,15 @@
-from streamlit as st
-from engine import SynapseEngine
-# นำเข้าค่าคงที่ตามโครงสร้างที่เราสร้างไว้ใน constants.py
+import streamlit as st  # แก้ไขตรงนี้
+import sys
+import os
+
+# บังคับให้ Python มองเห็นโฟลเดอร์ปัจจุบันและโฟลเดอร์ย่อยทั้งหมด
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# นำเข้าค่าคงที่และ Engine
 from engine.constants import WEEKDAYS, ZODIAC_SIGNS, COLOR_PALETTE, ENTERTAINMENT_DISCLAIMER
-# ตัวอย่างการ Import ภายในไฟล์ engine/synapse_engine.py
-from .constants import WEEKDAYS, ZODIAC_SIGNS
-from .helper import timestamp, round6
-# 1. การตั้งค่าหน้าจอและแสดงข้อความ Disclaimer ตามหลักเกณฑ์ความปลอดภัย
-st.set_page_config(page_title="SYNAPSE ENGINE", layout="centered")
-st.title("🧠 SYNAPSE ENGINE")
-st.caption("Sound & Visual Therapy - Entertainment & Data Exploration")
+from engine import SynapseEngine
+
+# ... โค้ดส่วนที่เหลือเหมือนเดิมได้เลยครับ ...
 
 # แสดงข้อความชี้แจงเพื่อความบันเทิงที่ด้านบนสุด
 st.info(ENTERTAINMENT_DISCLAIMER)
