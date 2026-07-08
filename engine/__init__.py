@@ -1,7 +1,5 @@
-"""
-SYNAPSE Engine Package
-"""
+import streamlit as st
+from engine.constants import ENTERTAINMENT_DISCLAIMER, COLOR_PALETTE
 
-from .synapse_engine import SynapseEngine
-from .math_engine import MathEngine
-from .zodiac_engine import ZodiacEngine
+# แสดงข้อความแจ้งเตือนความบันเทิงที่หน้าแรกตามหลักเกณฑ์
+st.info(ENTERTAINMENT_DISCLAIMER)
