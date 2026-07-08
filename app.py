@@ -1,4 +1,3 @@
-import streamlit as st  # แก้ไขตรงนี้
 import streamlit as st
 import sys
 import os
@@ -9,9 +8,6 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # นำเข้าค่าคงที่และ Engine ให้ถูกต้องตามโครงสร้างระบบ
 from engine.constants import WEEKDAYS, ZODIAC_SIGNS, COLOR_PALETTE, ENTERTAINMENT_DISCLAIMER
 from engine import SynapseEngine
-from engine.constants import WEEKDAYS, ZODIAC_SIGNS, COLOR_PALETTE, ENTERTAINMENT_DISCLAIMER
-from engine import SynapseEngine
-# ... โค้ดส่วนที่เหลือเหมือนเดิมได้เลยครับ ...
 
 # แสดงข้อความชี้แจงเพื่อความบันเทิงที่ด้านบนสุด
 st.info(ENTERTAINMENT_DISCLAIMER)
