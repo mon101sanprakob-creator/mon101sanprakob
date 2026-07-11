@@ -17,13 +17,12 @@ from engine.synapse_engine import SynapseEngine
 # ==========================================================
 def get_lunar_phase_day(target_date):
     """คำนวณดิถีดวงจันทร์โดยอ้างอิงรอบดวงจันทร์จาก constants.py"""
-    # ฐานวันจันทร์ดับอ้างอิง (กำหนดให้เป็นแบบ datetime.date เพื่อให้หักลบกันได้)
+    # 🔥 [FIXED] แปลงฐานเวลาเป็น datetime.date เพื่อป้องกันบั๊ก Type mismatch
     base_date = datetime(2000, 1, 6).date()  
     diff_days = (target_date - base_date).days
     lunar_age = diff_days % SYNODIC_MONTH
     lunar_day = int(lunar_age) + 1
     return min(max(lunar_day, 1), 30)
-    
 
 def get_thai_zodiac_code(year):
     """แปลงปี ค.ศ. เกิดให้กลายเป็นรหัสตัวเลขปีนักษัตรไทย (1-12)"""
@@ -55,6 +54,15 @@ st.markdown(f"""
         box-shadow: 0 0 15px {PRIMARY}, inset 0 0 10px {BG_DARK};
         margin-bottom: 25px;
     }}
+    .neon-lucky-box {{
+        background-color: #0d0e12;
+        padding: 20px;
+        border-radius: 12px;
+        border: 2px dashed {SECONDARY};
+        box-shadow: 0 0 15px {SECONDARY};
+        text-align: center;
+        margin-top: 20px;
+    }}
     .neon-text-primary {{
         color: {PRIMARY};
         text-shadow: 0 0 8px {PRIMARY};
@@ -64,6 +72,13 @@ st.markdown(f"""
         color: {SECONDARY};
         text-shadow: 0 0 8px {SECONDARY};
         font-weight: bold;
+    }}
+    .lucky-number {{
+        font-size: 38px;
+        font-weight: bold;
+        color: #ffffff;
+        text-shadow: 0 0 12px #ffffff, 0 0 20px {SECONDARY};
+        letter-spacing: 5px;
     }}
     /* จำลองคลื่น Waveform เคลื่อนไหวด้วย CSS */
     .wave-container {{
@@ -98,7 +113,6 @@ st.markdown(f"""
 # ==========================================================
 # HEADER & LOGO DISPLAY
 # ==========================================================
-# แสดงโลโก้จากไฟล์ logo1.png ในโฟลเดอร์หลัก
 if os.path.exists("logo1.png"):
     st.image("logo1.png", width=120)
 
@@ -161,6 +175,12 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
             calc_energy = result.get('energy', 0.0)
             calc_root = result.get('root', 2)
             
+            # 🔮 [NEW] อัลกอริทึมสกัดเลขเด่น 3 ตัว และเลขท้าย 2 ตัว จากสัญญาณความถี่จริง
+            # ดึงเลข 3 หลักแรกหน้าทศนิยม (หรือตัดเศษ)
+            freq_str = f"{recommended_freq:.4f}".replace('.', '')
+            digit_3 = freq_str[1:4]  # สกัดเลขเด่น 3 ตัวจากตำแหน่งแกนกลางความถี่
+            digit_2 = freq_str[-3:-1] # สกัดเลขท้าย 2 ตัวจากแกนพลังงานทศนิยมปลายสาย
+            
             st.success("✨ สัญญาณเสถียร! ถอดรหัสโครงสร้างคลื่นสำเร็จ")
             
             # 🌟 ส่วนที่ 1: การ์ดนีออนแสดงผลคลื่นแนะนำหลัก
@@ -175,11 +195,26 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
                 </p>
                 <hr style="border-color:#333; margin:15px 0;">
                 <p style="color:{TEXT_COLOR}; font-size:16px; margin-bottom:5px;">✨ คลื่นความถี่จำลองที่แนะนำสำหรับคุณ:</p>
-                <h2 class="neon-text-secondary" style="margin:0; font-size:36px;">{recommended_freq:.4f} Hz</h2>
+                <h2 class="neon-text-primary" style="margin:0; font-size:36px;">{recommended_freq:.4f} Hz</h2>
+                
+                <div class="neon-lucky-box">
+                    <span style="color:{SECONDARY}; font-weight:bold; font-size:14px; text-transform:uppercase; letter-spacing:2px;">🔮 SYNAPSE MATRIX MATRIX NUMBERS 🔮</span>
+                    <div style="display:flex; justify-content:space-around; margin-top:15px;">
+                        <div>
+                            <div style="color:{TEXT_COLOR}; font-size:13px; opacity:0.7;">เลขเด่น (3 ตัว)</div>
+                            <div class="lucky-number">{digit_3}</div>
+                        </div>
+                        <div style="border-left: 1px solid #333; height: 60px;"></div>
+                        <div>
+                            <div style="color:{TEXT_COLOR}; font-size:13px; opacity:0.7;">เลขท้าย (2 ตัว)</div>
+                            <div class="lucky-number" style="color:{PRIMARY}; text-shadow: 0 0 12px #ffffff, 0 0 20px {PRIMARY};">{digit_2}</div>
+                        </div>
+                    </div>
+                </div>
             </div>
             """, unsafe_allow_html=True)
             
-            # 🌟 ส่วนที่ 2: ความพิเศษ! แถบแอนิเมชันจำลองการปล่อยคลื่นเสียงบำบัด
+            # 🌟 ส่วนที่ 2: แถบแอนิเมชันจำลองการปล่อยคลื่นเสียงบำบัด
             st.write("🎵 **ระบบจำลองสัญญาณคลื่นเสียง (Frequencies Bio-feedback Active):**")
             st.markdown(
                 '<div class="wave-container">' + ''.join(['<div class="bar"></div>' for _ in range(35)]) + '</div>', 
@@ -205,31 +240,19 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
             # รายละเอียดสรุปสมการ
             st.info(f"""
             💡 **ถอดรหัสลอจิกคณิตศาสตร์หลังบ้าน:**
-            1. ระบบนำค่าตัวแปรวันเกิดที่แปลงเป็นรหัสแล้ว ไปคูณและคำนวณร่วมกับเครื่องยนต์หลักจนได้ผลรวมปัจจัยดิบ **{calc_total:.4f}**
-            2. นำไปปรับค่าพลังงานคลื่นสะสมจนได้ค่าพลังงานสุทธิที่ **{calc_energy:.4f}** แล้วนำไปถอดค่ารากกำลังที่ระดับมิติ **รากที่ {calc_root}**
-            3. นำพลังงานสุดท้ายไปคำนวณเสริมนี่เชื่อมโยงด้วยอัตราส่วนทองคำธรรมชาติ **({PHI:.4f})** ออกมาเป็นคลื่นเฉพาะบุคคลจำลองที่ **{recommended_freq:.4f} Hz**
+            1. ระบบนำค่าตัวแปรวันเกิดที่แปลงเป็นรหัสแล้ว ไปคำนวณร่วมกับเครื่องยนต์หลักจนได้ผลรวมปัจจัยดิบ **{calc_total:.4f}**
+            2. นำไปประมวลผลสัญญาณจนได้ค่าพลังงานสุทธิที่ **{calc_energy:.4f}** แล้วนำไปถอดค่ารากกำลังระดับมิติ **รากที่ {calc_root}**
+            3. นำพลังงานสุดท้ายผสานร่วมกับอัตราส่วนทองคำธรรมชาติ **({PHI:.4f})** ออกมาเป็นคลื่นเฉพาะบุคคล **{recommended_freq:.4f} Hz** และสกัดรหัส Matrix ออกมาเป็นเลข **{digit_3}** และ **{digit_2}**
             """)
             
-            # 🌟 ส่วนที่ 4: ความพิเศษ! ปุ่มกดดาวน์โหลดเอกสารรายงานสรุปสัญญาณ
+            # 🌟 ส่วนที่ 4: ปุ่มกดดาวน์โหลดเอกสารรายงานสรุปสัญญาณ
             report_text = f"""--- SYNAPSE ENGINE REPORT ---
 Date Calculated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-User Birthday: {selected_date.strftime('%Y-%m-%d')} (Day: {current_weekday_name}, Month: {current_month_name}, Zodiac: {display_zodiac_name})
+User Birthday: {selected_date.strftime('%Y-%m-%d')}
 ---------------------------------
-[System Constants]
-- Golden Ratio (Phi): {PHI}
-- Synodic Lunar Month: {SYNODIC_MONTH} days
-
-[Calculation Matrix]
-- Day Factor: {calc_day}
-- Month Factor: {calc_month}
-- Zodiac Factor: {calc_zodiac}
-- Lunar Factor: {calc_lunar}
-- Total Factor Sum: {calc_total}
-- Computed Signal Energy: {calc_energy}
-- Math Root Dimension: {calc_root}
-
 [Final personal Frequency Output]
 => RECOMMENDED FREQUENCY: {recommended_freq} Hz
+=> MATRIX CODES DECODED: 3-Digits [{digit_3}] | 2-Digits [{digit_2}]
 ---------------------------------
 """
             st.download_button(
@@ -240,11 +263,10 @@ User Birthday: {selected_date.strftime('%Y-%m-%d')} (Day: {current_weekday_name}
                 use_container_width=True
             )
             
-            # ส่วนตรวจดู JSON โครงสร้างแบบเดิม (ซ่อนไว้ใน Expander)
+            # ส่วนตรวจดู JSON
             with st.expander("🔍 ตรวจสอบโครงสร้างระบบดิบ (JSON Metadata)"):
                 st.json({"inputs_parsed_to_engine_codes": {"weekday_code": auto_weekday_code, "month_code": auto_month_code, "zodiac_code": auto_zodiac_code, "lunar_phase": auto_lunar}, "engine_result": result})
                 
         except Exception as e:
             st.error(f"เกิดข้อผิดพลาดในระบบ Engine: {str(e)}")
             st.info("โปรดลอง Reboot App ในแถบเมนู Manage app อีกครั้งเพื่อเคลียร์ Cache")
-    
