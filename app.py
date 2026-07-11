@@ -17,7 +17,6 @@ from engine.synapse_engine import SynapseEngine
 # ==========================================================
 def get_lunar_phase_day(target_date):
     """คำนวณดิถีดวงจันทร์โดยอ้างอิงรอบดวงจันทร์จาก constants.py"""
-    # 🔥 [FIXED] แปลงฐานเวลาเป็น datetime.date เพื่อป้องกันบั๊ก Type mismatch
     base_date = datetime(2000, 1, 6).date()  
     diff_days = (target_date - base_date).days
     lunar_age = diff_days % SYNODIC_MONTH
@@ -45,23 +44,24 @@ TEXT_COLOR = COLOR_PALETTE.get('TEXT_LIGHT', '#ffffff')
 
 st.markdown(f"""
 <style>
-    /* ตกแต่งกล่องนีออนเรืองแสง */
+    /* ตกแต่งกล่องนีออนเรืองแสงหลัก */
     .neon-box {{
         background-color: {BG_DARK};
         padding: 25px;
         border-radius: 15px;
         border: 2px solid {PRIMARY};
-        box-shadow: 0 0 15px {PRIMARY}, inset 0 0 10px {BG_DARK};
-        margin-bottom: 25px;
+        box-shadow: 0 0 15px {PRIMARY};
+        margin-bottom: 20px;
     }}
-    .neon-lucky-box {{
+    /* กล่องหมายเลขนำโชคแยกเดี่ยวป้องกันโค้ดหลุด */
+    .neon-lucky-card {{
         background-color: #0d0e12;
-        padding: 20px;
-        border-radius: 12px;
+        padding: 15px;
+        border-radius: 10px;
         border: 2px dashed {SECONDARY};
-        box-shadow: 0 0 15px {SECONDARY};
+        box-shadow: 0 0 10px {SECONDARY};
         text-align: center;
-        margin-top: 20px;
+        margin: 10px 0;
     }}
     .neon-text-primary {{
         color: {PRIMARY};
@@ -73,12 +73,13 @@ st.markdown(f"""
         text-shadow: 0 0 8px {SECONDARY};
         font-weight: bold;
     }}
-    .lucky-number {{
-        font-size: 38px;
+    .lucky-number-style {{
+        font-size: 42px;
         font-weight: bold;
         color: #ffffff;
-        text-shadow: 0 0 12px #ffffff, 0 0 20px {SECONDARY};
-        letter-spacing: 5px;
+        text-shadow: 0 0 10px #ffffff, 0 0 20px {SECONDARY};
+        letter-spacing: 3px;
+        margin-top: 5px;
     }}
     /* จำลองคลื่น Waveform เคลื่อนไหวด้วย CSS */
     .wave-container {{
@@ -175,53 +176,57 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
             calc_energy = result.get('energy', 0.0)
             calc_root = result.get('root', 2)
             
-            # 🔮 [NEW] อัลกอริทึมสกัดเลขเด่น 3 ตัว และเลขท้าย 2 ตัว จากสัญญาณความถี่จริง
-            # ดึงเลข 3 หลักแรกหน้าทศนิยม (หรือตัดเศษ)
+            # 🔮 อัลกอริทึมสกัดเลขเด่น 3 ตัว และเลขท้าย 2 ตัว จากสัญญาณความถี่จริงอย่างแม่นยำ
             freq_str = f"{recommended_freq:.4f}".replace('.', '')
-            digit_3 = freq_str[1:4]  # สกัดเลขเด่น 3 ตัวจากตำแหน่งแกนกลางความถี่
-            digit_2 = freq_str[-3:-1] # สกัดเลขท้าย 2 ตัวจากแกนพลังงานทศนิยมปลายสาย
+            digit_3 = freq_str[1:4]   
+            digit_2 = freq_str[-3:-1] 
             
             st.success("✨ สัญญาณเสถียร! ถอดรหัสโครงสร้างคลื่นสำเร็จ")
             
-            # 🌟 ส่วนที่ 1: การ์ดนีออนแสดงผลคลื่นแนะนำหลัก
+            # 🌟 ส่วนที่ 1: การ์ดนีออนแสดงผลข้อมูลวันเกิดและความถี่หลัก (ปิดแท็ก HTML ชัดเจน 100%)
             st.markdown(f"""
             <div class="neon-box">
                 <h4 style="margin-top:0; color:{TEXT_COLOR};">📡 สรุปสัญญาณผลลัพธ์ SYNAPSE</h4>
                 <p style="color:{TEXT_COLOR}; font-size:15px; margin-bottom:5px;">
                     <b>พิกัดวันเกิดของคุณ:</b> วัน{current_weekday_name}ที่ {selected_date.day} {current_month_name} ค.ศ. {selected_date.year}
                 </p>
-                <p style="color:{TEXT_COLOR}; font-size:14px; opacity:0.8;">
+                <p style="color:{TEXT_COLOR}; font-size:14px; opacity:0.8; margin-bottom:15px;">
                     รหัสตัวแปร: วัน ({auto_weekday_code}) | เดือน ({auto_month_code}) | ปี{display_zodiac_name} ({auto_zodiac_code}) | ดิถีดวงจันทร์ ({auto_lunar})
                 </p>
                 <hr style="border-color:#333; margin:15px 0;">
                 <p style="color:{TEXT_COLOR}; font-size:16px; margin-bottom:5px;">✨ คลื่นความถี่จำลองที่แนะนำสำหรับคุณ:</p>
-                <h2 class="neon-text-primary" style="margin:0; font-size:36px;">{recommended_freq:.4f} Hz</h2>
-                
-                <div class="neon-lucky-box">
-                    <span style="color:{SECONDARY}; font-weight:bold; font-size:14px; text-transform:uppercase; letter-spacing:2px;">🔮 SYNAPSE MATRIX MATRIX NUMBERS 🔮</span>
-                    <div style="display:flex; justify-content:space-around; margin-top:15px;">
-                        <div>
-                            <div style="color:{TEXT_COLOR}; font-size:13px; opacity:0.7;">เลขเด่น (3 ตัว)</div>
-                            <div class="lucky-number">{digit_3}</div>
-                        </div>
-                        <div style="border-left: 1px solid #333; height: 60px;"></div>
-                        <div>
-                            <div style="color:{TEXT_COLOR}; font-size:13px; opacity:0.7;">เลขท้าย (2 ตัว)</div>
-                            <div class="lucky-number" style="color:{PRIMARY}; text-shadow: 0 0 12px #ffffff, 0 0 20px {PRIMARY};">{digit_2}</div>
-                        </div>
-                    </div>
-                </div>
+                <h2 class="neon-text-primary" style="margin:0; font-size:38px;">{recommended_freq:.4f} Hz</h2>
             </div>
             """, unsafe_allow_html=True)
             
-            # 🌟 ส่วนที่ 2: แถบแอนิเมชันจำลองการปล่อยคลื่นเสียงบำบัด
+            # 🌟 ส่วนที่ 2: แสดงผลเลขเด่น 3 ตัว และ 2 ตัว โดยใช้ระบบ Layout ของ Streamlit (ปลอดภัยจากปัญหาโค้ดพัง)
+            st.write("🔮 **SYNAPSE MATRIX NUMBERS (รหัสตัวเลขนำโชคถอดสัญญาณ):**")
+            lucky_col1, lucky_col2 = st.columns(2)
+            
+            with lucky_col1:
+                st.markdown(f"""
+                <div class="neon-lucky-card">
+                    <span style="color:{TEXT_COLOR}; font-size:13px; opacity:0.8;">เลขเด่น (3 ตัว)</span>
+                    <div class="lucky-number-style">{digit_3}</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            with lucky_col2:
+                st.markdown(f"""
+                <div class="neon-lucky-card" style="border-color:{PRIMARY}; box-shadow: 0 0 10px {PRIMARY};">
+                    <span style="color:{TEXT_COLOR}; font-size:13px; opacity:0.8;">เลขท้าย (2 ตัว)</span>
+                    <div class="lucky-number-style" style="color:{PRIMARY}; text-shadow: 0 0 10px #ffffff, 0 0 20px {PRIMARY};">{digit_2}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # 🌟 ส่วนที่ 3: แถบแอนิเมชันจำลองการปล่อยคลื่นเสียงบำบัด
             st.write("🎵 **ระบบจำลองสัญญาณคลื่นเสียง (Frequencies Bio-feedback Active):**")
             st.markdown(
                 '<div class="wave-container">' + ''.join(['<div class="bar"></div>' for _ in range(35)]) + '</div>', 
                 unsafe_allow_html=True
             )
             
-            # 🌟 ส่วนที่ 3: แผงแจกแจงที่มาและสูตรคำนวณ (เปิดเผยค่า 1.618 และ 29.53)
+            # 🌟 ส่วนที่ 4: แผงแจกแจงที่มาและสูตรคำนวณ (เปิดเผยค่า 1.618 และ 29.53)
             st.subheader("🧮 แผงวงจรคำนวณและค่าคงที่สากล (Math Matrix)")
             
             col1, col2 = st.columns(2)
@@ -245,7 +250,7 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
             3. นำพลังงานสุดท้ายผสานร่วมกับอัตราส่วนทองคำธรรมชาติ **({PHI:.4f})** ออกมาเป็นคลื่นเฉพาะบุคคล **{recommended_freq:.4f} Hz** และสกัดรหัส Matrix ออกมาเป็นเลข **{digit_3}** และ **{digit_2}**
             """)
             
-            # 🌟 ส่วนที่ 4: ปุ่มกดดาวน์โหลดเอกสารรายงานสรุปสัญญาณ
+            # 🌟 ส่วนที่ 5: ปุ่มกดดาวน์โหลดเอกสารรายงานสรุปสัญญาณ
             report_text = f"""--- SYNAPSE ENGINE REPORT ---
 Date Calculated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 User Birthday: {selected_date.strftime('%Y-%m-%d')}
