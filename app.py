@@ -2,20 +2,14 @@ import streamlit as st
 import sys
 import os
 
-# บังคับให้ Python มองเห็นโฟลเดอร์ปัจจุบันและโฟลเดอร์ย่อยทั้งหมด
-current_dir = os.path.dirname(os.path.abspath(__file__))
-if current_dir not in sys.path:
-    sys.path.append(current_dir)
+# บังคับให้ Python มองเห็น Root Path เสมอไม่ว่าจะรันบนเครื่องคอมหรือบน Cloud Server
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 
-# นำเข้าค่าคงที่และ Engine (แก้ไขให้รองรับโครงสร้างโฟลเดอร์ทั่วไป)
-try:
-    from engine.constants import WEEKDAYS, ZODIAC_SIGNS, COLOR_PALETTE, ENTERTAINMENT_DISCLAIMER
-    from engine.synapse_engine import SynapseEngine  # เจาะจงชื่อไฟล์ synapse_engine.py ป้องกัน ModuleNotFoundError
-except ModuleNotFoundError:
-    # เผื่อไว้ในกรณีที่ import แบบ package ปกติ
-    from engine.constants import WEEKDAYS, ZODIAC_SIGNS, COLOR_PALETTE, ENTERTAINMENT_DISCLAIMER
-    from engine import SynapseEngine
-
+# นำเข้าค่าคงที่และ Engine
+from engine.constants import WEEKDAYS, ZODIAC_SIGNS, COLOR_PALETTE, ENTERTAINMENT_DISCLAIMER
+from engine.synapse_engine import SynapseEngine
 # ==========================================================
 # CONFIGURATION & INITIALIZATION
 # ==========================================================
