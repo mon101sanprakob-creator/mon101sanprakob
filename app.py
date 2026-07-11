@@ -3,8 +3,6 @@ import sys
 import os
 import glob
 from datetime import datetime
-import numpy as np
-import matplotlib.pyplot as plt
 
 # บังคับให้ Python มองเห็น Root Path เสมอ
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -222,18 +220,34 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
                 </div>
                 """, unsafe_allow_html=True)
 
-            # 🌟 ส่วนที่ 3: 📊 [ใหม่!] เจนค่ากราฟรูปคลื่นแบบ Real-time ตามความถี่จริง
-            st.write("📈 **ผังวิเคราะห์โครงสร้างคลื่นเสียง (Real-time Bio-Waveform Generated):**")
-            x = np.linspace(0, 10, 1000)
-            y = np.sin(recommended_freq * x)
+            # 🌟 ส่วนที่ 3: 🌀 [ใหม่แบบที่ 1] เจนวงแหวนนีออนหมุนวนแบบ Dynamic (Cyber Neon Ring Engine)
+            st.write("🌌 **เครื่องจำลองมิติคลื่นสมอง (Personalized Neon Therapy Resonance):**")
+            
+            # ลอจิกแปลงความถี่เป็นความเร็วการหมุน: ความถี่สูงหมุนเร็ว ความถี่ต่ำหมุนช้าอย่างมั่นคง
+            rotate_speed = max(1.5, min(12.0, 500.0 / recommended_freq))
+            
+            st.markdown(f"""
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0d0e12; padding: 30px; border-radius: 12px; border: 1px solid #222; margin: 15px 0;">
+                <div style="
+                    width: 140px; 
+                    height: 140px; 
+                    border-radius: 50%; 
+                    border: 4px double {PRIMARY};
+                    box-shadow: 0 0 20px {PRIMARY}, inset 0 0 15px {PRIMARY};
+                    animation: spinNeon {rotate_speed}s linear infinite;
+                "></div>
+                <span style="color: {SECONDARY}; font-size: 11px; letter-spacing: 2px; margin-top: 20px; text-transform: uppercase; opacity: 0.8;">⚡ Visualizer Sync Pulse Active ⚡</span>
+            </div>
+            <style>
+                @keyframes spinNeon {{
+                    0% {{ transform: rotate(0deg); box-shadow: 0 0 15px {PRIMARY}, inset 0 0 10px {PRIMARY}; border-color: {PRIMARY}; }}
+                    50% {{ box-shadow: 0 0 30px {SECONDARY}, inset 0 0 20px {SECONDARY}; border-color: {SECONDARY}; }}
+                    100% {{ transform: rotate(360deg); box-shadow: 0 0 15px {PRIMARY}, inset 0 0 10px {PRIMARY}; border-color: {PRIMARY}; }}
+                }}
+            </style>
+            """, unsafe_allow_html=True)
 
-            fig, ax = plt.subplots(figsize=(6, 2))
-            ax.plot(x, y, color=PRIMARY, linewidth=2)
-            ax.axis('off')  # ปิดเส้นแกนให้เหลือแต่เส้นคลื่นเพียวๆ
-            fig.patch.set_facecolor('#1a1c23')  # ปรับพื้นหลังกราฟให้กลืนกับธีมแอป
-            st.pyplot(fig)
-
-            # 🌟 ส่วนที่ 4: 🎵 ระบบดึงเพลงอัจฉริยะสอดคล้องกับโครงสร้างกราฟ
+            # 🌟 ส่วนที่ 4: 🎵 ระบบดึงเพลงอัจฉริยะควบคู่กับวงแหวนบำบัด
             my_playlist = glob.glob("*.mp3")
             
             st.write("🎵 **ระบบจำลองสัญญาณคลื่นเสียง (Frequencies Bio-feedback Active):**")
@@ -306,4 +320,4 @@ User Birthday: {selected_date.strftime('%Y-%m-%d')}
         except Exception as e:
             st.error(f"เกิดข้อผิดพลาดในระบบ Engine: {str(e)}")
             st.info("โปรดลอง Reboot App ในแถบเมนู Manage app อีกครั้งเพื่อเคลียร์ Cache")
-                        
+    
