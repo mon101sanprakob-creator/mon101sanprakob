@@ -11,3 +11,4 @@ numpy
 plotly
 Pillow
 plotly
+matplotlib
