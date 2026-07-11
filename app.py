@@ -1,6 +1,8 @@
 import streamlit as st
 import sys
 import os
+import base64
+import glob
 from datetime import datetime
 
 # บังคับให้ Python มองเห็น Root Path เสมอ
@@ -13,7 +15,7 @@ from engine.constants import WEEKDAYS_TH, MONTHS, ZODIAC, COLOR_PALETTE, ENTERTA
 from engine.synapse_engine import SynapseEngine
 
 # ==========================================================
-# HELPER FUNCTIONS FOR CONVERSION
+# HELPER FUNCTIONS FOR CONVERSION & AUDIO AUTO-PLAY
 # ==========================================================
 def get_lunar_phase_day(target_date):
     """คำนวณดิถีดวงจันทร์โดยอ้างอิงรอบดวงจันทร์จาก constants.py"""
@@ -30,6 +32,24 @@ def get_thai_zodiac_code(year):
     index = (year - base_year + 4) % 12
     zodiac_name = zodiac_order[index]
     return ZODIAC.get(zodiac_name, 1), zodiac_name
+
+def play_audio_autoplay(file_path):
+    """แปลงไฟล์ MP3 เป็น Base64 และฝังโค้ด HTML สั่ง Autoplay แบบซ่อนตัวแปลง"""
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, "rb") as f:
+                audio_bytes = f.read()
+            b64_audio = base64.b64encode(audio_bytes).decode()
+            audio_html = f"""
+                <audio autoplay style="display:none;">
+                    <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
+                </audio>
+            """
+            st.markdown(audio_html, unsafe_allow_html=True)
+            return True
+        except Exception:
+            return False
+    return False
 
 # ==========================================================
 # CONFIGURATION & NEON INTERFACE DESIGN (CUSTOM CSS)
@@ -176,14 +196,14 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
             calc_energy = result.get('energy', 0.0)
             calc_root = result.get('root', 2)
             
-            # 🔮 อัลกอริทึมสกัดเลขเด่น 3 ตัว และเลขท้าย 2 ตัว จากสัญญาณความถี่จริงอย่างแม่นยำ
+            # 🔮 อัลกอริทึมสกัดเลขเด่น 3 ตัว และเลขท้าย 2 ตัว จากสัญญาณความถี่จริง
             freq_str = f"{recommended_freq:.4f}".replace('.', '')
             digit_3 = freq_str[1:4]   
             digit_2 = freq_str[-3:-1] 
             
             st.success("✨ สัญญาณเสถียร! ถอดรหัสโครงสร้างคลื่นสำเร็จ")
             
-            # 🌟 ส่วนที่ 1: การ์ดนีออนแสดงผลข้อมูลวันเกิดและความถี่หลัก (ปิดแท็ก HTML ชัดเจน 100%)
+            # 🌟 ส่วนที่ 1: การ์ดนีออนแสดงผลข้อมูลวันเกิดและความถี่หลัก
             st.markdown(f"""
             <div class="neon-box">
                 <h4 style="margin-top:0; color:{TEXT_COLOR};">📡 สรุปสัญญาณผลลัพธ์ SYNAPSE</h4>
@@ -199,7 +219,7 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
             </div>
             """, unsafe_allow_html=True)
             
-            # 🌟 ส่วนที่ 2: แสดงผลเลขเด่น 3 ตัว และ 2 ตัว โดยใช้ระบบ Layout ของ Streamlit (ปลอดภัยจากปัญหาโค้ดพัง)
+            # 🌟 ส่วนที่ 2: แสดงผลเลขเด่น 3 ตัว และ 2 ตัว ปลอดภัยไร้บั๊ก HTML
             st.write("🔮 **SYNAPSE MATRIX NUMBERS (รหัสตัวเลขนำโชคถอดสัญญาณ):**")
             lucky_col1, lucky_col2 = st.columns(2)
             
@@ -218,15 +238,39 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
                     <div class="lucky-number-style" style="color:{PRIMARY}; text-shadow: 0 0 10px #ffffff, 0 0 20px {PRIMARY};">{digit_2}</div>
                 </div>
                 """, unsafe_allow_html=True)
+
+            # 🌟 ส่วนที่ 3: 🎵 ระบบจับคู่เพลงอัจฉริยะแบบสแกนโฟลเดอร์อัตโนมัติ
+            # โค้ดจะกวาดหาไฟล์ .mp3 ทั้งหมดที่อยู่ในโปรเจกต์ของพี่เองทันที
+            my_playlist = glob.glob("*.mp3")
             
-            # 🌟 ส่วนที่ 3: แถบแอนิเมชันจำลองการปล่อยคลื่นเสียงบำบัด
             st.write("🎵 **ระบบจำลองสัญญาณคลื่นเสียง (Frequencies Bio-feedback Active):**")
+            
+            if len(my_playlist) > 0:
+                # เรียงลำดับชื่อไฟล์ให้เป็นระเบียบเพื่อให้ผลลัพธ์คงที่เสมอกับคนเดิม
+                my_playlist.sort()
+                
+                # ลอจิกคณิตศาสตร์: คำนวณหาลำดับเพลงที่จะแมตช์ตามค่า Math Matrix จาก 80 เพลง
+                playlist_index = int(abs(calc_total * recommended_freq)) % len(my_playlist)
+                audio_filename = my_playlist[playlist_index]
+                
+                # สั่ง Autoplay หลังบ้าน
+                did_autoplay = play_audio_autoplay(audio_filename)
+                
+                # แสดงเครื่องเล่นเสียงหน้าบ้าน
+                with open(audio_filename, "rb") as f:
+                    st.audio(f.read(), format="audio/mp3")
+                
+                st.caption(f"✨ *ระบบเลือกบทเพลง `{audio_filename}` (เพลงที่ {playlist_index + 1} จากทั้งหมด {len(my_playlist)} เพลงในระบบ) เพื่อซิงค์เข้ากับคลื่นความถี่ของท่าน*")
+            else:
+                st.warning("⚠️ ไม่พบไฟล์เพลง .mp3 ในระบบโปรเจกต์ปัจจุบัน (โปรดนำไฟล์เพลงทั้งหมดของคุณอัปโหลดเข้ามาไว้ที่โฟลเดอร์หลักของโปรเจกต์นี้บน GitHub ก่อนนะครับ)")
+
+            # 🌟 ส่วนที่ 4: แถบแอนิเมชันจำลองการปล่อยคลื่นเสียงบำบัด
             st.markdown(
                 '<div class="wave-container">' + ''.join(['<div class="bar"></div>' for _ in range(35)]) + '</div>', 
                 unsafe_allow_html=True
             )
             
-            # 🌟 ส่วนที่ 4: แผงแจกแจงที่มาและสูตรคำนวณ (เปิดเผยค่า 1.618 และ 29.53)
+            # 🌟 ส่วนที่ 5: แผงแจกแจงที่มาและสูตรคำนวณ (เปิดเผยค่า 1.618 และ 29.53)
             st.subheader("🧮 แผงวงจรคำนวณและค่าคงที่สากล (Math Matrix)")
             
             col1, col2 = st.columns(2)
@@ -250,7 +294,7 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
             3. นำพลังงานสุดท้ายผสานร่วมกับอัตราส่วนทองคำธรรมชาติ **({PHI:.4f})** ออกมาเป็นคลื่นเฉพาะบุคคล **{recommended_freq:.4f} Hz** และสกัดรหัส Matrix ออกมาเป็นเลข **{digit_3}** และ **{digit_2}**
             """)
             
-            # 🌟 ส่วนที่ 5: ปุ่มกดดาวน์โหลดเอกสารรายงานสรุปสัญญาณ
+            # 🌟 ส่วนที่ 6: ปุ่มกดดาวน์โหลดเอกสารรายงานสรุปสัญญาณ
             report_text = f"""--- SYNAPSE ENGINE REPORT ---
 Date Calculated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 User Birthday: {selected_date.strftime('%Y-%m-%d')}
@@ -275,3 +319,4 @@ User Birthday: {selected_date.strftime('%Y-%m-%d')}
         except Exception as e:
             st.error(f"เกิดข้อผิดพลาดในระบบ Engine: {str(e)}")
             st.info("โปรดลอง Reboot App ในแถบเมนู Manage app อีกครั้งเพื่อเคลียร์ Cache")
+    
