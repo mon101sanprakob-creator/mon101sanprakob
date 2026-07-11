@@ -98,25 +98,51 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
             text_color = COLOR_PALETTE.get('TEXT_LIGHT', '#ffffff')
             secondary_color = COLOR_PALETTE.get('SECONDARY', '#00ff99')
             
-            # 🔥 [แก้ไขจุดนี้] ดึงค่าความถี่จากคีย์ 'frequency' โดยตรงตามโครงสร้าง JSON จริงที่ส่งออกมา
+            # ดึงค่าทั้งหมดออกจากตัวแปรผลลัพธ์เพื่อนำมาแจกแจง
             recommended_freq = result.get('frequency', 0.0)
+            calc_day = result.get('day', 0.0)
+            calc_month = result.get('month', 0.0)
+            calc_zodiac = result.get('zodiac', 0.0)
+            calc_lunar = result.get('lunar', 0.0)
+            calc_total = result.get('total', 0.0)
+            calc_energy = result.get('energy', 0.0)
+            calc_root = result.get('root', 2)
             
-            # แสดงค่าสรุปที่อ่านง่ายให้ยูสเซอร์ดูบนหน้าต่าง UI
+            # 🌟 ส่วนที่ 1: กล่องสรุปภาพรวมสำหรับผู้ใช้
             st.markdown(f"""
             <div style="background-color: {bg_color}; padding: 20px; border-radius: 10px; border-left: 5px solid {primary_color};">
-                <h4 style="color: {primary_color}; margin-top:0;">📡 สรุปสัญญาณ SYNAPSE จากวันเกิด</h4>
-                <p style="color: {text_color};"><b>วันเกิด:</b> วัน{current_weekday_name} ที่ {selected_date.day} {current_month_name} ค.ศ. {selected_date.year}</p>
-                <p style="color: {text_color};"><b>ปีนักษัตร (Zodiac):</b> ปี{display_zodiac_name} (รหัส: {auto_zodiac_code})</p>
-                <p style="color: {text_color};"><b>ระดับดิถีดวงจันทร์ (Lunar Phase):</b> วันที่ {auto_lunar} ของรอบดวงจันทร์</p>
-                <hr style="border-color: #333;">
-                <p style="color: {secondary_color}; font-size: 20px;"><b>ความถี่ที่แนะนำ:</b> {recommended_freq:.2f} Hz</p>
+                <h4 style="color: {primary_color}; margin-top:0; margin-bottom:15px;">📡 ผลสรุปสัญญาณ SYNAPSE จากวันเกิด</h4>
+                <p style="color: {text_color}; font-size: 15px;"><b>ข้อมูลฐาน:</b> วัน{current_weekday_name} ที่ {selected_date.day} {current_month_name} ค.ศ. {selected_date.year}</p>
+                <p style="color: {text_color}; font-size: 15px;"><b>รหัสปัจจัย:</b> วัน ({auto_weekday_code}) | เดือน ({auto_month_code}) | ปี{display_zodiac_name} ({auto_zodiac_code}) | ดิถีดวงจันทร์ (วันที่ {auto_lunar})</p>
+                <hr style="border-color: #333; margin: 15px 0;">
+                <p style="color: {secondary_color}; font-size: 24px; margin-bottom: 0;"><b>ความถี่คลื่นที่แนะนำ:</b> {recommended_freq:.4f} Hz</p>
             </div>
             """, unsafe_allow_html=True)
             
+            # 🌟 ส่วนที่ 2: การ์ดแจกแจงที่มาและขั้นตอนการคำนวณทางคณิตศาสตร์แบบละเอียด
+            st.write("")
+            st.subheader("🧮 รายละเอียดขั้นตอนและที่มาของตัวเลข")
+            
+            # แบ่งเป็น 2 คอลัมน์ย่อยเพื่อความเป็นระเบียบ
+            m_col1, m_col2 = st.columns(2)
+            
+            with m_col1:
+                st.metric(label="1. ผลลัพธ์ปัจจัยรายวัน (Day Factor)", value=f"{calc_day:.4f}", delta=f"รหัสวัน: {auto_weekday_code}")
+                st.metric(label="2. ผลลัพธ์ปัจจัยรายเดือน (Month Factor)", value=f"{calc_month:.4f}", delta=f"รหัสเดือน: {auto_month_code}")
+                st.metric(label="3. ผลลัพธ์ปัจจัยจักรราศี (Zodiac Factor)", value=f"{calc_zodiac:.4f}", delta=f"รหัสราศี: {auto_zodiac_code}")
+                st.metric(label="4. ผลลัพธ์ปัจจัยจันทรคติ (Lunar Factor)", value=f"{calc_lunar:.4f}", delta=f"ดิถี: วันที่ {auto_lunar}")
+
+            with m_col2:
+                st.info(f"➕ **ผลรวมปัจจัยดิบ (Total Sum)**\n\nนำปัจจัยทั้ง 4 ข้อมาบวกรวมกันได้ค่าเท่ากับ: **{calc_total:.4f}**")
+                st.info(f"⚡ **พลังงานสัญญาณสะสม (Energy)**\n\nผลรวมหลังจากประมวลผลตามอัลกอริทึม: **{calc_energy:.4f}**")
+                st.info(f"🔢 **ค่ารากฐานกำลัง (Mathematical Root)**\n\nระดับมิติการถอดรากที่ระบบเลือกใช้: รากที่ **{calc_root}**")
+            
+            st.info(f"⚙️ **สูตรการวิเคราะห์ขั้นสุดท้าย:** ระบบดึงฐานความถี่ตั้งต้นมาผสานร่วมกับพลังงานสัญญาณที่คำนวณได้จากวันเกิดของคุณ จนแตกตัวออกมาเป็นคลื่นความถี่บำบัดเฉพาะบุคคลจำลองที่ **{recommended_freq:.4f} Hz**")
+            
             st.write("")
             
-            # แสดงข้อมูล JSON metadata เต็มรูปแบบสำหรับการส่งข้อมูลหลังบ้าน
-            with st.expander("🔍 ดูข้อมูลโครงสร้างสัญญาณระบบ (JSON Metadata)"):
+            # แสดงข้อมูล JSON metadata เต็มรูปแบบสำหรับการส่งข้อมูลหลังบ้าน (คงไว้ตรวจสอบ)
+            with st.expander("🔍 ดูข้อมูลโครงสร้างสัญญาณระบบตัวเต็ม (JSON Metadata)"):
                 st.json({
                     "inputs_parsed_to_engine_codes": {
                         "weekday_code": auto_weekday_code,
