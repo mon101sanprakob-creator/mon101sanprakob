@@ -220,23 +220,50 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
                 </div>
                 """, unsafe_allow_html=True)
 
-            # 🌟 ส่วนที่ 3: 🌀 [ใหม่แบบที่ 1] เจนวงแหวนนีออนหมุนวนแบบ Dynamic (Cyber Neon Ring Engine)
+                        # 🌟 ส่วนที่ 3: 🌀 [อัปเดต] เครื่องจำลองรูปร่างมิติคลื่นสมอง (Dynamic Shape Neon Resonance)
             st.write("🌌 **เครื่องจำลองมิติคลื่นสมอง (Personalized Neon Therapy Resonance):**")
             
-            # ลอจิกแปลงความถี่เป็นความเร็วการหมุน: ความถี่สูงหมุนเร็ว ความถี่ต่ำหมุนช้าอย่างมั่นคง
+            # ลอจิก 1: เปลี่ยนความเร็วการหมุนตามตัวเลขความถี่
             rotate_speed = max(1.5, min(12.0, 500.0 / recommended_freq))
+            
+            # ลอจิก 2: ถอดรหัสผลรวมพลังงานมาเลือก "รูปร่างของภาพนีออน" (ได้ 4 รูปร่างไม่ซ้ำกันตามดวง)
+            shape_index = int(abs(calc_total * recommended_freq)) % 4
+            
+            if shape_index == 0:
+                # 🟢 รูปร่างที่ 1: ทรงกลมพลังงาน
+                border_style = "border-radius: 50%;"
+                shape_name = "Cosmic Sphere (ทรงกลมพลังงานสมบูรณ์)"
+            elif shape_index == 1:
+                # 🟡 รูปร่างที่ 2: ทรงหยดน้ำควอนตัม
+                border_style = "border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;"
+                shape_name = "Fluid Capsule (รูปทรงหยดน้ำควอนตัม)"
+            elif shape_index == 2:
+                # 🔵 รูปร่างที่ 3: ทรงผลึกคริสตัลไซเบอร์
+                border_style = "border-radius: 0%; transform: rotate(45deg); max-width: 100px; max-height: 100px; margin: 20px auto;"
+                shape_name = "Cyber Crystal (รูปทรงผลึกคริสตัลเรืองแสง)"
+            else:
+                # 🟣 รูปร่างที่ 4: รูปทรงโล่ห์นีออน
+                border_style = "border-radius: 50% 50% 0% 0% / 40% 40% 0% 0%;"
+                shape_name = "Aegis Matrix (รูปทรงโล่ห์ป้องกันไซไฟ)"
+
+            # แสดงผลภาพกราฟิกนีออนที่เจนรูปทรงและเปลี่ยนตามวันเกิดจริง
+            # สำหรับรูปคริสตัล (shape_index == 2) เราจะแยกสไตล์อนิเมะหมุนให้มันไม่เบี้ยวครับ
+            animation_name = "spinCube" if shape_index == 2 else "spinNeon"
             
             st.markdown(f"""
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0d0e12; padding: 30px; border-radius: 12px; border: 1px solid #222; margin: 15px 0;">
                 <div style="
-                    width: 140px; 
-                    height: 140px; 
-                    border-radius: 50%; 
+                    width: 130px; 
+                    height: 130px; 
                     border: 4px double {PRIMARY};
                     box-shadow: 0 0 20px {PRIMARY}, inset 0 0 15px {PRIMARY};
-                    animation: spinNeon {rotate_speed}s linear infinite;
+                    {border_style}
+                    animation: {animation_name} {rotate_speed}s linear infinite;
                 "></div>
-                <span style="color: {SECONDARY}; font-size: 11px; letter-spacing: 2px; margin-top: 20px; text-transform: uppercase; opacity: 0.8;">⚡ Visualizer Sync Pulse Active ⚡</span>
+                <span style="color: {SECONDARY}; font-size: 13px; font-weight: bold; margin-top: 25px; letter-spacing: 1px;">
+                    🔮 รูปร่างสัญญาณจิต: <span style="color:#ffffff;">{shape_name}</span>
+                </span>
+                <span style="color: {PRIMARY}; font-size: 10px; letter-spacing: 2px; margin-top: 5px; text-transform: uppercase; opacity: 0.6;">⚡ Visualizer Shape Sync Active ⚡</span>
             </div>
             <style>
                 @keyframes spinNeon {{
@@ -244,8 +271,14 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
                     50% {{ box-shadow: 0 0 30px {SECONDARY}, inset 0 0 20px {SECONDARY}; border-color: {SECONDARY}; }}
                     100% {{ transform: rotate(360deg); box-shadow: 0 0 15px {PRIMARY}, inset 0 0 10px {PRIMARY}; border-color: {PRIMARY}; }}
                 }}
+                @keyframes spinCube {{
+                    0% {{ transform: rotate(45deg); box-shadow: 0 0 15px {PRIMARY}; border-color: {PRIMARY}; }}
+                    50% {{ box-shadow: 0 0 30px {SECONDARY}; border-color: {SECONDARY}; }}
+                    100% {{ transform: rotate(405deg); box-shadow: 0 0 15px {PRIMARY}; border-color: {PRIMARY}; }}
+                }}
             </style>
             """, unsafe_allow_html=True)
+
 
             # 🌟 ส่วนที่ 4: 🎵 ระบบดึงเพลงอัจฉริยะควบคู่กับวงแหวนบำบัด
             my_playlist = glob.glob("*.mp3")
