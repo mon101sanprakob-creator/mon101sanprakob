@@ -98,7 +98,8 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
             text_color = COLOR_PALETTE.get('TEXT_LIGHT', '#ffffff')
             secondary_color = COLOR_PALETTE.get('SECONDARY', '#00ff99')
             
-            recommended_freq = result.get('analysis', {}).get('recommended_frequency_hz', 0)
+            # 🔥 [แก้ไขจุดนี้] ดึงค่าความถี่จากคีย์ 'frequency' โดยตรงตามโครงสร้าง JSON จริงที่ส่งออกมา
+            recommended_freq = result.get('frequency', 0.0)
             
             # แสดงค่าสรุปที่อ่านง่ายให้ยูสเซอร์ดูบนหน้าต่าง UI
             st.markdown(f"""
@@ -108,7 +109,7 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
                 <p style="color: {text_color};"><b>ปีนักษัตร (Zodiac):</b> ปี{display_zodiac_name} (รหัส: {auto_zodiac_code})</p>
                 <p style="color: {text_color};"><b>ระดับดิถีดวงจันทร์ (Lunar Phase):</b> วันที่ {auto_lunar} ของรอบดวงจันทร์</p>
                 <hr style="border-color: #333;">
-                <p style="color: {secondary_color}; font-size: 20px;"><b>ความถี่ที่แนะนำ:</b> {recommended_freq} Hz</p>
+                <p style="color: {secondary_color}; font-size: 20px;"><b>ความถี่ที่แนะนำ:</b> {recommended_freq:.2f} Hz</p>
             </div>
             """, unsafe_allow_html=True)
             
@@ -129,3 +130,4 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
         except Exception as e:
             st.error(f"เกิดข้อผิดพลาดในระบบ Engine: {str(e)}")
             st.info("โปรดลอง Reboot App ในแถบเมนู Manage app อีกครั้งเพื่อล้าง Cache ระบบ")
+    
