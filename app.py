@@ -3,6 +3,20 @@ import sys
 import os
 import glob
 from datetime import datetime
+import numpy as np
+import matplotlib.pyplot as plt
+
+# เจนค่ากราฟรูปคลื่นตามความถี่จริง
+x = np.linspace(0, 10, 1000)
+y = np.sin(recommended_freq * x)
+
+fig, ax = plt.subplots(figsize=(6, 2))
+ax.plot(x, y, color=PRIMARY, linewidth=2)
+ax.axis('off') # ปิดเส้นแกนให้เหลือแต่เส้นคลื่นเพียวๆ
+fig.patch.set_facecolor('#1a1c23') # ปรับพื้นหลังกราฟให้กลืนกับแอป
+
+st.pyplot(fig)
+
 
 # บังคับให้ Python มองเห็น Root Path เสมอ
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
