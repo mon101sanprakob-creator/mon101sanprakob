@@ -6,18 +6,6 @@ from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 
-# เจนค่ากราฟรูปคลื่นตามความถี่จริง
-x = np.linspace(0, 10, 1000)
-y = np.sin(recommended_freq * x)
-
-fig, ax = plt.subplots(figsize=(6, 2))
-ax.plot(x, y, color=PRIMARY, linewidth=2)
-ax.axis('off') # ปิดเส้นแกนให้เหลือแต่เส้นคลื่นเพียวๆ
-fig.patch.set_facecolor('#1a1c23') # ปรับพื้นหลังกราฟให้กลืนกับแอป
-
-st.pyplot(fig)
-
-
 # บังคับให้ Python มองเห็น Root Path เสมอ
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
@@ -234,7 +222,18 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
                 </div>
                 """, unsafe_allow_html=True)
 
-            # 🌟 ส่วนที่ 3: 🎵 [ปรับปรุง] ระบบดึงเพลงอัจฉริยะแบบสตรีมมิ่งไร้รอยต่อ (ไม่โหลดค้าง)
+            # 🌟 ส่วนที่ 3: 📊 [ใหม่!] เจนค่ากราฟรูปคลื่นแบบ Real-time ตามความถี่จริง
+            st.write("📈 **ผังวิเคราะห์โครงสร้างคลื่นเสียง (Real-time Bio-Waveform Generated):**")
+            x = np.linspace(0, 10, 1000)
+            y = np.sin(recommended_freq * x)
+
+            fig, ax = plt.subplots(figsize=(6, 2))
+            ax.plot(x, y, color=PRIMARY, linewidth=2)
+            ax.axis('off')  # ปิดเส้นแกนให้เหลือแต่เส้นคลื่นเพียวๆ
+            fig.patch.set_facecolor('#1a1c23')  # ปรับพื้นหลังกราฟให้กลืนกับธีมแอป
+            st.pyplot(fig)
+
+            # 🌟 ส่วนที่ 4: 🎵 ระบบดึงเพลงอัจฉริยะสอดคล้องกับโครงสร้างกราฟ
             my_playlist = glob.glob("*.mp3")
             
             st.write("🎵 **ระบบจำลองสัญญาณคลื่นเสียง (Frequencies Bio-feedback Active):**")
@@ -246,19 +245,19 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
                 playlist_index = int(abs(calc_total * recommended_freq)) % len(my_playlist)
                 audio_filename = my_playlist[playlist_index]
                 
-                # เรียกสตรีมมิ่งผ่าน st.audio ตรงๆ (ไม่ใช้ Base64 เพื่อป้องกันการค้าง)
+                # เรียกสตรีมมิ่งผ่าน st.audio
                 st.audio(audio_filename, format="audio/mp3")
-                st.caption(f"✨ *ระบบคัดสรรบทเพลง: `{audio_filename}` (เพลงที่ {playlist_index + 1} จากทั้งหมด {len(my_playlist)} เพลงในระบบ) เพื่อซิงค์เข้ากับระดับจิตใจของท่าน*")
+                st.caption(f"✨ *ระบบคัดสรรบทเพลง: `{audio_filename}` เพื่อซิงค์เข้ากับระดับจิตใจของท่าน*")
             else:
                 st.warning("⚠️ ไม่พบไฟล์เพลง .mp3 ในโฟลเดอร์หลักบน GitHub")
 
-            # 🌟 ส่วนที่ 4: แถบแอนิเมชันจำลองการปล่อยคลื่นเสียงบำบัด
+            # 🌟 ส่วนที่ 5: แถบแอนิเมชันจำลองการปล่อยคลื่นเสียงบำบัด
             st.markdown(
                 '<div class="wave-container">' + ''.join(['<div class="bar"></div>' for _ in range(35)]) + '</div>', 
                 unsafe_allow_html=True
             )
             
-            # 🌟 ส่วนที่ 5: แผงแจกแจงที่มาและสูตรคำนวณ
+            # 🌟 ส่วนที่ 6: แผงแจกแจงที่มาและสูตรคำนวณ
             st.subheader("🧮 แผงวงจรคำนวณและค่าคงที่สากล (Math Matrix)")
             
             col1, col2 = st.columns(2)
@@ -282,7 +281,7 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
             3. นำพลังงานสุดท้ายผสานร่วมกับอัตราส่วนทองคำธรรมชาติ **({PHI:.4f})** ออกมาเป็นคลื่นเฉพาะบุคคล **{recommended_freq:.4f} Hz** และสกัดรหัส Matrix ออกมาเป็นเลข **{digit_3}** และ **{digit_2}**
             """)
             
-            # 🌟 ส่วนที่ 6: ปุ่มกดดาวน์โหลดเอกสารรายงานสรุปสัญญาณ
+            # 🌟 ส่วนที่ 7: ปุ่มกดดาวน์โหลดเอกสารรายงานสรุปสัญญาณ
             report_text = f"""--- SYNAPSE ENGINE REPORT ---
 Date Calculated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 User Birthday: {selected_date.strftime('%Y-%m-%d')}
@@ -307,4 +306,3 @@ User Birthday: {selected_date.strftime('%Y-%m-%d')}
         except Exception as e:
             st.error(f"เกิดข้อผิดพลาดในระบบ Engine: {str(e)}")
             st.info("โปรดลอง Reboot App ในแถบเมนู Manage app อีกครั้งเพื่อเคลียร์ Cache")
-            
