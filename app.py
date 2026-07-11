@@ -17,11 +17,13 @@ from engine.synapse_engine import SynapseEngine
 # ==========================================================
 def get_lunar_phase_day(target_date):
     """คำนวณดิถีดวงจันทร์โดยอ้างอิงรอบดวงจันทร์จาก constants.py"""
-    base_date = datetime(2000, 1, 6)  # วันจันทร์ดับอ้างอิง
+    # ฐานวันจันทร์ดับอ้างอิง (กำหนดให้เป็นแบบ datetime.date เพื่อให้หักลบกันได้)
+    base_date = datetime(2000, 1, 6).date()  
     diff_days = (target_date - base_date).days
     lunar_age = diff_days % SYNODIC_MONTH
     lunar_day = int(lunar_age) + 1
     return min(max(lunar_day, 1), 30)
+    
 
 def get_thai_zodiac_code(year):
     """แปลงปี ค.ศ. เกิดให้กลายเป็นรหัสตัวเลขปีนักษัตรไทย (1-12)"""
