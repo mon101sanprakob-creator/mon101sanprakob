@@ -3,11 +3,19 @@ import sys
 import os
 
 # บังคับให้ Python มองเห็นโฟลเดอร์ปัจจุบันและโฟลเดอร์ย่อยทั้งหมด
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
 
-# นำเข้าค่าคงที่และ Engine ให้ถูกต้องตามโครงสร้างระบบ
-from engine.constants import WEEKDAYS, ZODIAC_SIGNS, COLOR_PALETTE, ENTERTAINMENT_DISCLAIMER
-from engine import SynapseEngine
+# นำเข้าค่าคงที่และ Engine (แก้ไขให้รองรับโครงสร้างโฟลเดอร์ทั่วไป)
+try:
+    from engine.constants import WEEKDAYS, ZODIAC_SIGNS, COLOR_PALETTE, ENTERTAINMENT_DISCLAIMER
+    from engine.synapse_engine import SynapseEngine  # เจาะจงชื่อไฟล์ synapse_engine.py ป้องกัน ModuleNotFoundError
+except ModuleNotFoundError:
+    # เผื่อไว้ในกรณีที่ import แบบ package ปกติ
+    from engine.constants import WEEKDAYS, ZODIAC_SIGNS, COLOR_PALETTE, ENTERTAINMENT_DISCLAIMER
+    from engine import SynapseEngine
+
 # ==========================================================
 # CONFIGURATION & INITIALIZATION
 # ==========================================================
@@ -63,13 +71,21 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
             
             st.success("✨ ประมวลผลสัญญาณเสร็จสิ้น!")
             
+            # ดึงค่าสีออกมาก่อนเพื่อป้องกัน F-String Syntax Error ใน HTML
+            bg_color = COLOR_PALETTE.get('SURFACE', '#f0f2f6')
+            primary_color = COLOR_PALETTE.get('PRIMARY', '#ff4b4b')
+            text_color = COLOR_PALETTE.get('TEXT_LIGHT', '#31333f')
+            secondary_color = COLOR_PALETTE.get('SECONDARY', '#1c83e1')
+            
+            recommended_freq = result.get('analysis', {}).get('recommended_frequency_hz', 0)
+            
             # ตกแต่งกล่องข้อความจำลองค่าความถี่และธีมสีที่เหมาะสมด้วย COLOR_PALETTE
             st.markdown(f"""
-            <div style="background-color: {COLOR_PALETTE['SURFACE']}; padding: 20px; border-radius: 10px; border-left: 5px solid {COLOR_PALETTE['PRIMARY']};">
-                <h4 style="color: {COLOR_PALETTE['PRIMARY']}; margin-top:0;">📡 สรุปสัญญาณ SYNAPSE</h4>
-                <p style="color: {COLOR_PALETTE['TEXT_LIGHT']};"><b>วัน:</b> {selected_weekday} | <b>จักรราศี:</b> {selected_zodiac}</p>
-                <p style="color: {COLOR_PALETTE['TEXT_LIGHT']};"><b>รอบดวงจันทร์:</b> วันที่ {lunar_phase} ของเดือนจันทรคติ</p>
-                <p style="color: {COLOR_PALETTE['SECONDARY']};"><b>ความถี่ที่แนะนำ:</b> {result['analysis']['recommended_frequency_hz']} Hz</p>
+            <div style="background-color: {bg_color}; padding: 20px; border-radius: 10px; border-left: 5px solid {primary_color};">
+                <h4 style="color: {primary_color}; margin-top:0;">📡 สรุปสัญญาณ SYNAPSE</h4>
+                <p style="color: {text_color};"><b>วัน:</b> {selected_weekday} | <b>จักรราศี:</b> {selected_zodiac}</p>
+                <p style="color: {text_color};"><b>รอบดวงจันทร์:</b> วันที่ {lunar_phase} ของเดือนจันทรคติ</p>
+                <p style="color: {secondary_color};"><b>ความถี่ที่แนะนำ:</b> {recommended_freq} Hz</p>
             </div>
             """, unsafe_allow_html=True)
             
@@ -81,4 +97,4 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
                 
         except Exception as e:
             st.error(f"เกิดข้อผิดพลาดในระบบ Engine: {str(e)}")
-            st.info("โปรดตรวจสอบว่าคลาส SynapseEngine ในไฟล์ synapse_engine.py ทำงานได้ถูกต้อง")
+            st.info("โปรดตรวจสอบว่าคลาส SynapseEngine ในไฟล์ synapse_engine.py ทำงานได้ถูกต้อง และคืนค่าเป็น Dictionary ที่มีคีย์ ['analysis']['recommended_frequency_hz']")
