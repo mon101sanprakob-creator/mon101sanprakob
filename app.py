@@ -9,17 +9,17 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 # นำเข้าค่าคงที่และ Engine จากไฟล์ระบบ
-from engine.constants import WEEKDAYS_TH, MONTHS, ZODIAC, COLOR_PALETTE, ENTERTAINMENT_DISCLAIMER
+from engine.constants import WEEKDAYS_TH, MONTHS, ZODIAC, COLOR_PALETTE, ENTERTAINMENT_DISCLAIMER, PHI, SYNODIC_MONTH
 from engine.synapse_engine import SynapseEngine
 
 # ==========================================================
 # HELPER FUNCTIONS FOR CONVERSION
 # ==========================================================
 def get_lunar_phase_day(target_date):
-    """คำนวณดิถีดวงจันทร์ (1-30 วันรอบจันทรคติ) คืนค่าเป็นตัวเลข Integer"""
+    """คำนวณดิถีดวงจันทร์โดยอ้างอิงรอบดวงจันทร์จาก constants.py"""
     base_date = datetime(2000, 1, 6)  # วันจันทร์ดับอ้างอิง
     diff_days = (target_date - base_date).days
-    lunar_age = diff_days % 29.530588
+    lunar_age = diff_days % SYNODIC_MONTH
     lunar_day = int(lunar_age) + 1
     return min(max(lunar_day, 1), 30)
 
@@ -29,24 +29,87 @@ def get_thai_zodiac_code(year):
     base_year = 2000
     index = (year - base_year + 4) % 12
     zodiac_name = zodiac_order[index]
-    
-    # ดึงค่าตัวเลขรหัส (1-12) จากไฟล์ constants เช่น ชวด=1, มะโรง=5
     return ZODIAC.get(zodiac_name, 1), zodiac_name
 
 # ==========================================================
-# CONFIGURATION & INITIALIZATION
+# CONFIGURATION & NEON INTERFACE DESIGN (CUSTOM CSS)
 # ==========================================================
-st.set_page_config(page_title="SYNAPSE ENGINE", layout="centered")
-st.title("🧠 SYNAPSE ENGINE")
-st.caption("Sound & Visual Therapy - Entertainment & Data Exploration")
+st.set_page_config(page_title="SYNAPSE", layout="centered")
+
+# ดึงสีจากระบบมาสร้างสไตล์นีออนเรืองแสง
+PRIMARY = COLOR_PALETTE.get('PRIMARY', '#00ccff')
+SECONDARY = COLOR_PALETTE.get('SECONDARY', '#00ff99')
+BG_DARK = COLOR_PALETTE.get('SURFACE', '#1a1c23')
+TEXT_COLOR = COLOR_PALETTE.get('TEXT_LIGHT', '#ffffff')
+
+st.markdown(f"""
+<style>
+    /* ตกแต่งกล่องนีออนเรืองแสง */
+    .neon-box {{
+        background-color: {BG_DARK};
+        padding: 25px;
+        border-radius: 15px;
+        border: 2px solid {PRIMARY};
+        box-shadow: 0 0 15px {PRIMARY}, inset 0 0 10px {BG_DARK};
+        margin-bottom: 25px;
+    }}
+    .neon-text-primary {{
+        color: {PRIMARY};
+        text-shadow: 0 0 8px {PRIMARY};
+        font-weight: bold;
+    }}
+    .neon-text-secondary {{
+        color: {SECONDARY};
+        text-shadow: 0 0 8px {SECONDARY};
+        font-weight: bold;
+    }}
+    /* จำลองคลื่น Waveform เคลื่อนไหวด้วย CSS */
+    .wave-container {{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 60px;
+        margin: 20px 0;
+        background: #0d0e12;
+        border-radius: 8px;
+        border: 1px solid #333;
+    }}
+    .bar {{
+        display: inline-block;
+        width: 4px;
+        height: 10px;
+        background-color: {SECONDARY};
+        margin: 0 3px;
+        border-radius: 2px;
+        animation: pulse 1s ease-in-out infinite alternate;
+    }}
+    .bar:nth-child(2n) {{ background-color: {PRIMARY}; animation-delay: 0.2s; }}
+    .bar:nth-child(3n) {{ animation-delay: 0.4s; }}
+    .bar:nth-child(4n) {{ animation-delay: 0.6s; }}
+    @keyframes pulse {{
+        0% {{ height: 10px; transform: scaleY(1); }}
+        100% {{ height: 45px; transform: scaleY(1.1); box-shadow: 0 0 10px {SECONDARY}; }}
+    }}
+</style>
+""", unsafe_allow_html=True)
+
+# ==========================================================
+# HEADER & LOGO DISPLAY
+# ==========================================================
+# แสดงโลโก้จากไฟล์ logo1.png ในโฟลเดอร์หลัก
+if os.path.exists("logo1.png"):
+    st.image("logo1.png", width=120)
+
+st.markdown(f"<h1 style='margin-top:0;'>🧠 <span class='neon-text-primary'>SYNAPSE</span></h1>", unsafe_allow_html=True)
+st.caption("🌌 Sound & Visual Personal Therapy Engine — Cyberpunk Edition")
 
 st.info(ENTERTAINMENT_DISCLAIMER)
 st.markdown("---")
 
 # ==========================================================
-# INPUT SECTION (รับอินพุตเพียงจุดเดียว)
+# INPUT SECTION
 # ==========================================================
-st.subheader("📅 กรอกข้อมูลวันเกิดเพื่อวิเคราะห์สัญญาณ")
+st.subheader("📅 ระบุพิกัดเวลาเกิด (Birth Sign Integration)")
 
 selected_date = st.date_input(
     "เลือก วัน/เดือน/ปี ค.ศ. เกิดของคุณ:",
@@ -60,28 +123,24 @@ st.markdown("---")
 # ==========================================================
 # PROCESSING & OUTPUT SECTION
 # ==========================================================
-if st.button("🚀 เริ่มต้นระบบคำนวณและซิงค์สัญญาณ", use_container_width=True):
-    with st.spinner("กำลังถอดรหัสและประมวลผลข้อมูล..."):
+if st.button("🚀 เริ่มต้นระบบคำนวณและซิงค์สัญญาณนีออน", use_container_width=True):
+    with st.spinner("⚡ กำลังประมวลผลอัลกอริทึมและผสานค่าดาราศาสตร์สากล..."):
         try:
-            # 1. แปลงวันที่เป็น "ตัวเลขรหัสวัน" (อาทิตย์=1, จันทร์=2, ... เสาร์=7)
+            # 1. ถอดรหัสค่าวัน-เดือน
             weekday_names_th = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"]
             current_weekday_name = weekday_names_th[selected_date.weekday()]
             auto_weekday_code = WEEKDAYS_TH.get(current_weekday_name, 1)
             
-            # 2. แปลงเป็น "ตัวเลขรหัสเดือน" (มกราคม=1 ... ธันวาคม=12)
             thai_months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", 
                            "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
             current_month_name = thai_months[selected_date.month - 1]
             auto_month_code = MONTHS.get(current_month_name, 1)
             
-            # 3. แปลงปีเกิดเป็น "ตัวเลขรหัสปีนักษัตร" (1-12)
+            # 2. ถอดรหัสปีนักษัตรและคำนวณวันจันทรคติ
             auto_zodiac_code, display_zodiac_name = get_thai_zodiac_code(selected_date.year)
+            auto_lunar = get_lunar_phase_day(selected_date)
             
-            # 4. คำนวณค่าดิถีดวงจันทร์ (1-30)
-            datetime_obj = datetime(selected_date.year, selected_date.month, selected_date.day)
-            auto_lunar = get_lunar_phase_day(datetime_obj)
-            
-            # --- เรียกใช้งาน Engine โดยส่งเป็นตัวเลขรหัสทั้งหมดตามที่ MathEngine รอไว้ ---
+            # 3. สั่งประมวลผลผ่าน Engine หลัก
             engine = SynapseEngine()
             result = engine.calculate(
                 weekday=auto_weekday_code,
@@ -90,15 +149,7 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
                 lunar=auto_lunar
             )
             
-            st.success("✨ ประมวลผลและแปลงสัญญาณเสร็จสิ้น!")
-            
-            # ดึงธีมสีแสดงผลจาก COLOR_PALETTE
-            bg_color = COLOR_PALETTE.get('SURFACE', '#1a1c23')
-            primary_color = COLOR_PALETTE.get('PRIMARY', '#00ccff')
-            text_color = COLOR_PALETTE.get('TEXT_LIGHT', '#ffffff')
-            secondary_color = COLOR_PALETTE.get('SECONDARY', '#00ff99')
-            
-            # ดึงค่าทั้งหมดออกจากตัวแปรผลลัพธ์เพื่อนำมาแจกแจง
+            # ดึงตัวแปรผลลัพธ์ย่อยทั้งหมดออกมาใช้งาน
             recommended_freq = result.get('frequency', 0.0)
             calc_day = result.get('day', 0.0)
             calc_month = result.get('month', 0.0)
@@ -108,52 +159,90 @@ if st.button("🚀 เริ่มต้นระบบคำนวณและ�
             calc_energy = result.get('energy', 0.0)
             calc_root = result.get('root', 2)
             
-            # 🌟 ส่วนที่ 1: กล่องสรุปภาพรวมสำหรับผู้ใช้
+            st.success("✨ สัญญาณเสถียร! ถอดรหัสโครงสร้างคลื่นสำเร็จ")
+            
+            # 🌟 ส่วนที่ 1: การ์ดนีออนแสดงผลคลื่นแนะนำหลัก
             st.markdown(f"""
-            <div style="background-color: {bg_color}; padding: 20px; border-radius: 10px; border-left: 5px solid {primary_color};">
-                <h4 style="color: {primary_color}; margin-top:0; margin-bottom:15px;">📡 ผลสรุปสัญญาณ SYNAPSE จากวันเกิด</h4>
-                <p style="color: {text_color}; font-size: 15px;"><b>ข้อมูลฐาน:</b> วัน{current_weekday_name} ที่ {selected_date.day} {current_month_name} ค.ศ. {selected_date.year}</p>
-                <p style="color: {text_color}; font-size: 15px;"><b>รหัสปัจจัย:</b> วัน ({auto_weekday_code}) | เดือน ({auto_month_code}) | ปี{display_zodiac_name} ({auto_zodiac_code}) | ดิถีดวงจันทร์ (วันที่ {auto_lunar})</p>
-                <hr style="border-color: #333; margin: 15px 0;">
-                <p style="color: {secondary_color}; font-size: 24px; margin-bottom: 0;"><b>ความถี่คลื่นที่แนะนำ:</b> {recommended_freq:.4f} Hz</p>
+            <div class="neon-box">
+                <h4 style="margin-top:0; color:{TEXT_COLOR};">📡 สรุปสัญญาณผลลัพธ์ SYNAPSE</h4>
+                <p style="color:{TEXT_COLOR}; font-size:15px; margin-bottom:5px;">
+                    <b>พิกัดวันเกิดของคุณ:</b> วัน{current_weekday_name}ที่ {selected_date.day} {current_month_name} ค.ศ. {selected_date.year}
+                </p>
+                <p style="color:{TEXT_COLOR}; font-size:14px; opacity:0.8;">
+                    รหัสตัวแปร: วัน ({auto_weekday_code}) | เดือน ({auto_month_code}) | ปี{display_zodiac_name} ({auto_zodiac_code}) | ดิถีดวงจันทร์ ({auto_lunar})
+                </p>
+                <hr style="border-color:#333; margin:15px 0;">
+                <p style="color:{TEXT_COLOR}; font-size:16px; margin-bottom:5px;">✨ คลื่นความถี่จำลองที่แนะนำสำหรับคุณ:</p>
+                <h2 class="neon-text-secondary" style="margin:0; font-size:36px;">{recommended_freq:.4f} Hz</h2>
             </div>
             """, unsafe_allow_html=True)
             
-            # 🌟 ส่วนที่ 2: การ์ดแจกแจงที่มาและขั้นตอนการคำนวณทางคณิตศาสตร์แบบละเอียด
-            st.write("")
-            st.subheader("🧮 รายละเอียดขั้นตอนและที่มาของตัวเลข")
+            # 🌟 ส่วนที่ 2: ความพิเศษ! แถบแอนิเมชันจำลองการปล่อยคลื่นเสียงบำบัด
+            st.write("🎵 **ระบบจำลองสัญญาณคลื่นเสียง (Frequencies Bio-feedback Active):**")
+            st.markdown(
+                '<div class="wave-container">' + ''.join(['<div class="bar"></div>' for _ in range(35)]) + '</div>', 
+                unsafe_allow_html=True
+            )
             
-            # แบ่งเป็น 2 คอลัมน์ย่อยเพื่อความเป็นระเบียบ
-            m_col1, m_col2 = st.columns(2)
+            # 🌟 ส่วนที่ 3: แผงแจกแจงที่มาและสูตรคำนวณ (เปิดเผยค่า 1.618 และ 29.53)
+            st.subheader("🧮 แผงวงจรคำนวณและค่าคงที่สากล (Math Matrix)")
             
-            with m_col1:
-                st.metric(label="1. ผลลัพธ์ปัจจัยรายวัน (Day Factor)", value=f"{calc_day:.4f}", delta=f"รหัสวัน: {auto_weekday_code}")
-                st.metric(label="2. ผลลัพธ์ปัจจัยรายเดือน (Month Factor)", value=f"{calc_month:.4f}", delta=f"รหัสเดือน: {auto_month_code}")
-                st.metric(label="3. ผลลัพธ์ปัจจัยจักรราศี (Zodiac Factor)", value=f"{calc_zodiac:.4f}", delta=f"รหัสราศี: {auto_zodiac_code}")
-                st.metric(label="4. ผลลัพธ์ปัจจัยจันทรคติ (Lunar Factor)", value=f"{calc_lunar:.4f}", delta=f"ดิถี: วันที่ {auto_lunar}")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric(label="📊 ผลลัพธ์ปัจจัยรายวัน (Day Factor)", value=f"{calc_day:.4f}")
+                st.metric(label="🌙 ผลลัพธ์ปัจจัยจันทรคติ (Lunar Factor)", value=f"{calc_lunar:.4f}")
+                st.markdown(f"**📐 ค่าสัดส่วนทองคำธรรมชาติ ($\Phi$):** `{PHI}`")
+            
+            with col2:
+                st.metric(label="📅 ผลลัพธ์ปัจจัยรายเดือน (Month Factor)", value=f"{calc_month:.4f}")
+                st.metric(label="🧬 ผลลัพธ์ปัจจัยราศี (Zodiac Factor)", value=f"{calc_zodiac:.4f}")
+                st.markdown(f"**🌑 รอบดวงจันทร์ดาราศาสตร์:** `{SYNODIC_MONTH}` วัน")
+                
+            st.markdown("---")
+            
+            # รายละเอียดสรุปสมการ
+            st.info(f"""
+            💡 **ถอดรหัสลอจิกคณิตศาสตร์หลังบ้าน:**
+            1. ระบบนำค่าตัวแปรวันเกิดที่แปลงเป็นรหัสแล้ว ไปคูณและคำนวณร่วมกับเครื่องยนต์หลักจนได้ผลรวมปัจจัยดิบ **{calc_total:.4f}**
+            2. นำไปปรับค่าพลังงานคลื่นสะสมจนได้ค่าพลังงานสุทธิที่ **{calc_energy:.4f}** แล้วนำไปถอดค่ารากกำลังที่ระดับมิติ **รากที่ {calc_root}**
+            3. นำพลังงานสุดท้ายไปคำนวณเสริมนี่เชื่อมโยงด้วยอัตราส่วนทองคำธรรมชาติ **({PHI:.4f})** ออกมาเป็นคลื่นเฉพาะบุคคลจำลองที่ **{recommended_freq:.4f} Hz**
+            """)
+            
+            # 🌟 ส่วนที่ 4: ความพิเศษ! ปุ่มกดดาวน์โหลดเอกสารรายงานสรุปสัญญาณ
+            report_text = f"""--- SYNAPSE ENGINE REPORT ---
+Date Calculated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+User Birthday: {selected_date.strftime('%Y-%m-%d')} (Day: {current_weekday_name}, Month: {current_month_name}, Zodiac: {display_zodiac_name})
+---------------------------------
+[System Constants]
+- Golden Ratio (Phi): {PHI}
+- Synodic Lunar Month: {SYNODIC_MONTH} days
 
-            with m_col2:
-                st.info(f"➕ **ผลรวมปัจจัยดิบ (Total Sum)**\n\nนำปัจจัยทั้ง 4 ข้อมาบวกรวมกันได้ค่าเท่ากับ: **{calc_total:.4f}**")
-                st.info(f"⚡ **พลังงานสัญญาณสะสม (Energy)**\n\nผลรวมหลังจากประมวลผลตามอัลกอริทึม: **{calc_energy:.4f}**")
-                st.info(f"🔢 **ค่ารากฐานกำลัง (Mathematical Root)**\n\nระดับมิติการถอดรากที่ระบบเลือกใช้: รากที่ **{calc_root}**")
+[Calculation Matrix]
+- Day Factor: {calc_day}
+- Month Factor: {calc_month}
+- Zodiac Factor: {calc_zodiac}
+- Lunar Factor: {calc_lunar}
+- Total Factor Sum: {calc_total}
+- Computed Signal Energy: {calc_energy}
+- Math Root Dimension: {calc_root}
+
+[Final personal Frequency Output]
+=> RECOMMENDED FREQUENCY: {recommended_freq} Hz
+---------------------------------
+"""
+            st.download_button(
+                label="📥 ดาวน์โหลดบันทึกผลการถอดรหัสคลื่น (.txt)",
+                data=report_text,
+                file_name=f"synapse_signal_{selected_date.strftime('%Y%m%d')}.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
             
-            st.info(f"⚙️ **สูตรการวิเคราะห์ขั้นสุดท้าย:** ระบบดึงฐานความถี่ตั้งต้นมาผสานร่วมกับพลังงานสัญญาณที่คำนวณได้จากวันเกิดของคุณ จนแตกตัวออกมาเป็นคลื่นความถี่บำบัดเฉพาะบุคคลจำลองที่ **{recommended_freq:.4f} Hz**")
-            
-            st.write("")
-            
-            # แสดงข้อมูล JSON metadata เต็มรูปแบบสำหรับการส่งข้อมูลหลังบ้าน (คงไว้ตรวจสอบ)
-            with st.expander("🔍 ดูข้อมูลโครงสร้างสัญญาณระบบตัวเต็ม (JSON Metadata)"):
-                st.json({
-                    "inputs_parsed_to_engine_codes": {
-                        "weekday_code": auto_weekday_code,
-                        "month_code": auto_month_code,
-                        "zodiac_code": auto_zodiac_code,
-                        "lunar_phase": auto_lunar
-                    },
-                    "engine_result": result
-                })
+            # ส่วนตรวจดู JSON โครงสร้างแบบเดิม (ซ่อนไว้ใน Expander)
+            with st.expander("🔍 ตรวจสอบโครงสร้างระบบดิบ (JSON Metadata)"):
+                st.json({"inputs_parsed_to_engine_codes": {"weekday_code": auto_weekday_code, "month_code": auto_month_code, "zodiac_code": auto_zodiac_code, "lunar_phase": auto_lunar}, "engine_result": result})
                 
         except Exception as e:
             st.error(f"เกิดข้อผิดพลาดในระบบ Engine: {str(e)}")
-            st.info("โปรดลอง Reboot App ในแถบเมนู Manage app อีกครั้งเพื่อล้าง Cache ระบบ")
+            st.info("โปรดลอง Reboot App ในแถบเมนู Manage app อีกครั้งเพื่อเคลียร์ Cache")
     
