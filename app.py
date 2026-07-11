@@ -306,3 +306,4 @@ User Birthday: {selected_date.strftime('%Y-%m-%d')}
         except Exception as e:
             st.error(f"เกิดข้อผิดพลาดในระบบ Engine: {str(e)}")
             st.info("โปรดลอง Reboot App ในแถบเมนู Manage app อีกครั้งเพื่อเคลียร์ Cache")
+                        
