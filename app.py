@@ -158,53 +158,32 @@ with tab1:
                 </div>
                 """, unsafe_allow_html=True)
                 
-                st.write("🧬 **รหัสสัญญาณคลื่นนำโชคประจำพิกัด (Quantum Number Decryption):**")
-                col_num1, col_num2 = st.columns(2)
-                with col_num1:
-                    st.markdown(f"""
-                    <div class="neon-lucky-card" style="border: 2px dashed {PRIMARY}; box-shadow: 0 0 10px {PRIMARY};">
-                        <span style="color:{PRIMARY}; font-size:12px; font-weight:bold; letter-spacing:1px;">🔺 TRI-RESONANCE MATRIX</span>
-                        <div class="lucky-number-style" style="text-shadow: 0 0 10px #ffffff, 0 0 20px {PRIMARY};">{lucky_three_1}</div>
-                        <span style="color:#888888; font-size:10px; display:block; margin-top:5px;">*รหัสเชื่อมต่อสนามพลังงาน 3 มิติเฉพาะบุคคล</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with col_num2:
-                    st.markdown(f"""
-                    <div class="neon-lucky-card" style="border: 2px dashed {SECONDARY}; box-shadow: 0 0 10px {SECONDARY};">
-                        <span style="color:{SECONDARY}; font-size:12px; font-weight:bold; letter-spacing:1px;">🔹 BINARY QUANTUM CORE</span>
-                        <div class="lucky-number-style" style="text-shadow: 0 0 10px #ffffff, 0 0 20px {SECONDARY};">{lucky_two_1}</div>
-                        <span style="color:#888888; font-size:10px; display:block; margin-top:5px;">*รหัสประจุพลังงานควอนตัมคู่ประจำฐานเวลา</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-                st.write("🧬 **รหัสสัญญาณคลื่นนำโชคประจำพิกัด (Quantum Number Decryption):**")
-                col_num1, col_num2 = st.columns(2)
-                with col_num1:
-                    st.markdown(f"""
-                    <div class="neon-lucky-card" style="border: 2px dashed {PRIMARY}; box-shadow: 0 0 10px {PRIMARY};">
-                        <span style="color:{PRIMARY}; font-size:12px; font-weight:bold; letter-spacing:1px;">🔺 TRI-RESONANCE MATRIX</span>
-                        <div class="lucky-number-style" style="text-shadow: 0 0 10px #ffffff, 0 0 20px {PRIMARY};">{lucky_three_1}</div>
-                        <span style="color:#888888; font-size:10px; display:block; margin-top:5px;">*รหัสเชื่อมต่อสนามพลังงาน 3 มิติเฉพาะบุคคล</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with col_num2:
-                    st.markdown(f"""
-                    <div class="neon-lucky-card" style="border: 2px dashed {SECONDARY}; box-shadow: 0 0 10px {SECONDARY};">
-                        <span style="color:{SECONDARY}; font-size:12px; font-weight:bold; letter-spacing:1px;">🔹 BINARY QUANTUM CORE</span>
-                        <div class="lucky-number-style" style="text-shadow: 0 0 10px #ffffff, 0 0 20px {SECONDARY};">{lucky_two_1}</div>
-                        <span style="color:#888888; font-size:10px; display:block; margin-top:5px;">*รหัสประจุพลังงานควอนตัมคู่ประจำฐานเวลา</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-                  # แผงตรวจสอบค่าดัชนีดิบ (ปรับให้เก็บรหัสควอนตัมเข้า JSON ด้วย)
-with st.expander("🔍 ตรวจสอบโครงสร้างระบบดิบบุคคลหลัก (Main User JSON Metadata)", expanded=True):
-    st.json({
-        "user_inputs": data1,
-        "engine_calculations": result1,
-        "quantum_codes": {
-            "tri_resonance_matrix": lucky_three_1,  # ค่า 513 จะมาโชว์ในนี้
-            "binary_quantum_core": lucky_two_1      # ค่า 27 จะมาโชว์ในนี้
-        }
-    })
+                                # 1. การ์ดตัวเลข 3 ตัว และ 2 ตัว (มีอยู่แล้ว)
+                st.write("🧬 **รหัสสัญญาณคลื่นนำโชคประจำพิกัด...**")
+                # ... โค้ดแสดงผลการ์ด ...
 
+                # 2. แผง JSON Metadata ที่เราเพิ่มเข้าไป (ต้องเยื้องหน้าเท่ากับ st.write ด้านบน)
+                with st.expander("🔍 ตรวจสอบโครงสร้างระบบดิบบุคคลหลัก (Main User JSON Metadata)", expanded=True):
+                    st.json({
+                        "user_inputs": data1,
+                        "engine_calculations": result1,
+                        "quantum_codes": {
+                            "tri_resonance_matrix": lucky_three_1,
+                            "binary_quantum_core": lucky_two_1
+                        }
+                    })
+
+                # 3. โหมดบุคคลที่สองเสริม (ถ้ามี)
+                if enable_pair and selected_date2 is not None:
+                    # ... โค้ดวิเคราะห์คู่ ...
+                    
+                # 4. ส่วนโหลดเพลงประจำตัว
+                # ... โค้ดเล่นเพลง ...
+
+            # 🚨 [จุดสำคัญ!] เช็คตรงนี้ครับ บล็อก try ด้านบนสุด ต้องมี except ตัวนี้ปิดท้ายเสมอ
+            except Exception as e:
+                st.error(f"เกิดข้อผิดพลาดในการประมวลผลสัญญาณ: {str(e)}")
+    
 
                 # ==========================================================
                 # 🔍 [เพิ่มตรงนี้!] แผงตรวจสอบค่าดัชนีดิบ (Main User JSON Metadata)
