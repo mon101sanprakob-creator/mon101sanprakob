@@ -204,7 +204,7 @@ with tab1:
                     st.subheader("🔗 ผลวิเคราะห์การสะท้อนพ้องร่วมกับบุคคลที่สอง (Pair Integration Mode)")
                     
                     data2 = parse_date_inputs(selected_date2)
-                    result2 = engine.calculate(data2["weekday"], data2["month"], data2["zodiac"], data2["lunar"])
+                    resultน2 = engine.calculate(data2["weekday"], data2["month"], data2["zodiac"], data2["lunar"])
                     freq2 = result2.get('frequency', 0.0)
                     
                     diff_percent = abs(freq1 - freq2) / max(freq1, freq2) * 100
