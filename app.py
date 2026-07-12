@@ -110,7 +110,6 @@ tab1, tab2 = st.tabs(["🧬 วิเคราะห์พิกัดบุค�
 with tab1:
     st.subheader("📅 ระบุพิกัดเวลาเกิดหลัก (Main User Integration)")
     
-    # กรอกบุคคลหลักเสมอ
     st.markdown(f"<p style='color:{PRIMARY}; font-weight:bold; margin-bottom:0;'>🎁 พิกัดตัวคุณ (บุคคลหลัก)</p>", unsafe_allow_html=True)
     selected_date1 = st.date_input(
         "วันเกิดของคุณ:",
@@ -120,7 +119,6 @@ with tab1:
         key="date1"
     )
     
-    # 🔗 สวิตช์เปิด-ปิด โหมดบุคคลที่ 2 เสริม (Optional)
     enable_pair = st.checkbox("🔗 เปิดโหมดคำนวณคู่สมพงษ์ร่วมด้วย (เปิดเฉพาะบางกรณี)", value=False)
     
     selected_date2 = None
@@ -144,10 +142,8 @@ with tab1:
                 result1 = engine.calculate(data1["weekday"], data1["month"], data1["zodiac"], data1["lunar"])
                 freq1 = result1.get('frequency', 0.0)
                 
-                # --- [1] แสดงผลเฉพาะบุคคลหลักแบบจัดเต็ม (ไม่ให้หายไปไหน) ---
                 st.success("✨ ถอดรหัสคลื่นพลังงานเฉพาะบุคคลหลักเสร็จสิ้น!")
                 
-                # รหัสควอนตัม 3 ตัว 2 ตัว แบบไม่บอกว่าหวย
                 lucky_three_1 = str(int(abs(result1['total'] * PHI)) % 900 + 100)
                 lucky_two_1 = str(int(abs(result1['energy'] * freq1)) % 90 + 10).zfill(2)
                 
@@ -158,11 +154,26 @@ with tab1:
                 </div>
                 """, unsafe_allow_html=True)
                 
-                                # 1. การ์ดตัวเลข 3 ตัว และ 2 ตัว (มีอยู่แล้ว)
-                st.write("🧬 **รหัสสัญญาณคลื่นนำโชคประจำพิกัด...**")
-                # ... โค้ดแสดงผลการ์ด ...
+                st.write("🧬 **รหัสสัญญาณคลื่นนำโชคประจำพิกัด (Quantum Number Decryption):**")
+                col_num1, col_num2 = st.columns(2)
+                with col_num1:
+                    st.markdown(f"""
+                    <div class="neon-lucky-card" style="border: 2px dashed {PRIMARY}; box-shadow: 0 0 10px {PRIMARY};">
+                        <span style="color:{PRIMARY}; font-size:12px; font-weight:bold; letter-spacing:1px;">🔺 TRI-RESONANCE MATRIX</span>
+                        <div class="lucky-number-style" style="text-shadow: 0 0 10px #ffffff, 0 0 20px {PRIMARY};">{lucky_three_1}</div>
+                        <span style="color:#888888; font-size:10px; display:block; margin-top:5px;">*รหัสเชื่อมต่อสนามพลังงาน 3 มิติเฉพาะบุคคล</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col_num2:
+                    st.markdown(f"""
+                    <div class="neon-lucky-card" style="border: 2px dashed {SECONDARY}; box-shadow: 0 0 10px {SECONDARY};">
+                        <span style="color:{SECONDARY}; font-size:12px; font-weight:bold; letter-spacing:1px;">🔹 BINARY QUANTUM CORE</span>
+                        <div class="lucky-number-style" style="text-shadow: 0 0 10px #ffffff, 0 0 20px {SECONDARY};">{lucky_two_1}</div>
+                        <span style="color:#888888; font-size:10px; display:block; margin-top:5px;">*รหัสประจุพลังงานควอนตัมคู่ประจำฐานเวลา</span>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-                # 2. แผง JSON Metadata ที่เราเพิ่มเข้าไป (ต้องเยื้องหน้าเท่ากับ st.write ด้านบน)
+                # แสดงข้อมูลดิบ JSON บนหน้าแรกทันที
                 with st.expander("🔍 ตรวจสอบโครงสร้างระบบดิบบุคคลหลัก (Main User JSON Metadata)", expanded=True):
                     st.json({
                         "user_inputs": data1,
@@ -173,38 +184,13 @@ with tab1:
                         }
                     })
 
-                # 3. โหมดบุคคลที่สองเสริม (ถ้ามี)
-    if enable_pair and selected_date2 is not None:
-                    # ... โค้ดวิเคราะห์คู่ ...
-                    
-                # 4. ส่วนโหลดเพลงประจำตัว
-                # ... โค้ดเล่นเพลง ...
-
-            # 🚨 [จุดสำคัญ!] เช็คตรงนี้ครับ บล็อก try ด้านบนสุด ต้องมี except ตัวนี้ปิดท้ายเสมอ
-    except Exception as e:
-                st.error(f"เกิดข้อผิดพลาดในการประมวลผลสัญญาณ: {str(e)}")
-    
-
-                # ==========================================================
-                # 🔍 [เพิ่มตรงนี้!] แผงตรวจสอบค่าดัชนีดิบ (Main User JSON Metadata)
-                # ==========================================================
-                with st.expander("🔍 ตรวจสอบโครงสร้างระบบดิบบุคคลหลัก (Main User JSON Metadata)", expanded=True):
-                    st.json({
-                        "user_inputs": data1,
-                        "engine_calculations": result1,
-                        "quantum_codes": {
-                            "tri_resonance_matrix": lucky_three_1,
-                            "binary_quantum_core": lucky_two_1
-                        }
-                    })
-
-                # --- [2] ทำงานของบุคคลที่สองเสริมขึ้นมา (เฉพาะกรณีที่ติ๊กเลือกเท่านั้น) ---
+                # ทำงานของบุคคลที่สองเสริมขึ้นมา (เฉพาะกรณีที่เลือกโหมดคู่)
                 if enable_pair and selected_date2 is not None:
                     st.markdown("---")
                     st.subheader("🔗 ผลวิเคราะห์การสะท้อนพ้องร่วมกับบุคคลที่สอง (Pair Integration Mode)")
                     
                     data2 = parse_date_inputs(selected_date2)
-                    resultน2 = engine.calculate(data2["weekday"], data2["month"], data2["zodiac"], data2["lunar"])
+                    result2 = engine.calculate(data2["weekday"], data2["month"], data2["zodiac"], data2["lunar"])
                     freq2 = result2.get('frequency', 0.0)
                     
                     diff_percent = abs(freq1 - freq2) / max(freq1, freq2) * 100
@@ -246,7 +232,6 @@ with tab1:
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    # รูปร่างวงแหวนซ้อนทับโหมดคู่
                     def get_neon_shape(calc_total, recommended_freq):
                         shape_index = int(abs(calc_total * recommended_freq)) % 4
                         if shape_index == 0: return "border-radius: 50%;"
@@ -267,7 +252,7 @@ with tab1:
                     </div>
                     """, unsafe_allow_html=True)
                 
-                # --- [3] ส่วนโหลดเพลงประจำตัว (ดึงเพลงตามบุคคลหลัก หรือ ผลรวมคู่) ---
+                # โหลดเพลงบำบัดประจำพิกัด
                 my_playlist = glob.glob("*.mp3")
                 if len(my_playlist) > 0:
                     my_playlist.sort()
