@@ -136,8 +136,9 @@ st.caption("🌌 Sound & Visual PERSONAL & PAIR Therapy Resonance Engine")
 st.info(ENTERTAINMENT_DISCLAIMER)
 st.markdown("---")
 
+
 # ==========================================================
-# INPUT SECTION — รองรับ 2 พิกัดวันเกิด
+# [UPDATE!!] INPUT SECTION — รองรับ 2 พิกัดวันเกิด (ขยายเวลาถึงปี 1960)
 # ==========================================================
 st.subheader("📅 ระบุพิกัดคู่รหัสจักรวาล (Birth Sign Pair Integration)")
 
@@ -148,6 +149,8 @@ with col_input1:
     selected_date1 = st.date_input(
         "วันเกิด User 1:",
         value=datetime(2000, 1, 1),
+        min_value=datetime(1960, 1, 1),  # <-- เพิ่มบรรทัดนี้เพื่อขยายไปปี 1960
+        max_value=datetime(2026, 12, 31),
         key="date1"
     )
 
@@ -156,8 +159,11 @@ with col_input2:
     selected_date2 = st.date_input(
         "วันเกิด User 2:",
         value=datetime(2000, 1, 10),
+        min_value=datetime(1960, 1, 1),  # <-- เพิ่มบรรทัดนี้เพื่อขยายไปปี 1960
+        max_value=datetime(2026, 12, 31),
         key="date2"
     )
+    
 
 st.markdown("---")
 
