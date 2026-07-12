@@ -1,4 +1,3 @@
-ขอบs st
 import sys
 import os
 import glob
