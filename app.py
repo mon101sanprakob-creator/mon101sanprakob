@@ -176,7 +176,38 @@ with tab1:
                         <span style="color:#888888; font-size:10px; display:block; margin-top:5px;">*รหัสประจุพลังงานควอนตัมคู่ประจำฐานเวลา</span>
                     </div>
                     """, unsafe_allow_html=True)
-                
+                                st.write("🧬 **รหัสสัญญาณคลื่นนำโชคประจำพิกัด (Quantum Number Decryption):**")
+                col_num1, col_num2 = st.columns(2)
+                with col_num1:
+                    st.markdown(f"""
+                    <div class="neon-lucky-card" style="border: 2px dashed {PRIMARY}; box-shadow: 0 0 10px {PRIMARY};">
+                        <span style="color:{PRIMARY}; font-size:12px; font-weight:bold; letter-spacing:1px;">🔺 TRI-RESONANCE MATRIX</span>
+                        <div class="lucky-number-style" style="text-shadow: 0 0 10px #ffffff, 0 0 20px {PRIMARY};">{lucky_three_1}</div>
+                        <span style="color:#888888; font-size:10px; display:block; margin-top:5px;">*รหัสเชื่อมต่อสนามพลังงาน 3 มิติเฉพาะบุคคล</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col_num2:
+                    st.markdown(f"""
+                    <div class="neon-lucky-card" style="border: 2px dashed {SECONDARY}; box-shadow: 0 0 10px {SECONDARY};">
+                        <span style="color:{SECONDARY}; font-size:12px; font-weight:bold; letter-spacing:1px;">🔹 BINARY QUANTUM CORE</span>
+                        <div class="lucky-number-style" style="text-shadow: 0 0 10px #ffffff, 0 0 20px {SECONDARY};">{lucky_two_1}</div>
+                        <span style="color:#888888; font-size:10px; display:block; margin-top:5px;">*รหัสประจุพลังงานควอนตัมคู่ประจำฐานเวลา</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                # ==========================================================
+                # 🔍 [เพิ่มตรงนี้!] แผงตรวจสอบค่าดัชนีดิบ (Main User JSON Metadata)
+                # ==========================================================
+                with st.expander("🔍 ตรวจสอบโครงสร้างระบบดิบบุคคลหลัก (Main User JSON Metadata)", expanded=True):
+                    st.json({
+                        "user_inputs": data1,
+                        "engine_calculations": result1,
+                        "quantum_codes": {
+                            "tri_resonance_matrix": lucky_three_1,
+                            "binary_quantum_core": lucky_two_1
+                        }
+                    })
+
                 # --- [2] ทำงานของบุคคลที่สองเสริมขึ้นมา (เฉพาะกรณีที่ติ๊กเลือกเท่านั้น) ---
                 if enable_pair and selected_date2 is not None:
                     st.markdown("---")
