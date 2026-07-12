@@ -43,8 +43,11 @@ SECONDARY = COLOR_PALETTE.get ( ' SECONDARY' , '#00ff99' )
 BG_DARK = COLOR_PALETTE.get ( ' SURFACE ' , '#1a1c23' )
 TEXT_COLOR = COLOR_PALETTE.get ( 'TEXT_LIGHT' , ' #ffffff' )
 
-ส่วนลด( f"" "
-<สไตล์>
+st.markdown(f"""
+<style>
+    /* ตกแต่งช่องกรอกให้มีนีออนแยกสีตามลำดับ User */
+    .stDateInput div[data-baseweb="input"] {{
+    >
     /*เพิ่เติมกล่องเรืองแสงหลัก */
     .neon-box {{
         สีพื้นหลัง: { BG_DARK } ;
