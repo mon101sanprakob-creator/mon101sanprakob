@@ -176,7 +176,7 @@ with tab1:
                         <span style="color:#888888; font-size:10px; display:block; margin-top:5px;">*รหัสประจุพลังงานควอนตัมคู่ประจำฐานเวลา</span>
                     </div>
                     """, unsafe_allow_html=True)
-                                st.write("🧬 **รหัสสัญญาณคลื่นนำโชคประจำพิกัด (Quantum Number Decryption):**")
+                st.write("🧬 **รหัสสัญญาณคลื่นนำโชคประจำพิกัด (Quantum Number Decryption):**")
                 col_num1, col_num2 = st.columns(2)
                 with col_num1:
                     st.markdown(f"""
