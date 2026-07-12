@@ -33,34 +33,34 @@ def get_thai_zodiac_code(year):
     return ZODIAC.get(zodiac_name, 1), zodiac_name
 
 # ==========================================================
-# CONFIGURATION & NEON INTERFACE DESIGN (CUSTOM CSS)
+# การกำหนดค่าและการออกแบบอินเทอร์เฟซนีออน (CSS แบบกำหนดเอง)
 # ==========================================================
-st.set_page_config(page_title="SYNAPSE", layout="centered")
+st.set_page_config ( page_title = "SYNAPSE" , layout= "centered" )
 
-# ดึงสีจากระบบมาสร้างสไตล์นีออนเรืองแสง
-PRIMARY = COLOR_PALETTE.get('PRIMARY', '#00ccff')
-SECONDARY = COLOR_PALETTE.get('SECONDARY', '#00ff99')
-BG_DARK = COLOR_PALETTE.get('SURFACE', '#1a1c23')
-TEXT_COLOR = COLOR_PALETTE.get('TEXT_LIGHT', '#ffffff')
+#ดึงสีจากระบบมาสร้างสไตล์นีออนเรืองแสง
+PRIMARY = COLOR_PALETTE.get ( ' PRIMARY' , '#00ccff' )
+SECONDARY = COLOR_PALETTE.get ( ' SECONDARY' , '#00ff99' )
+BG_DARK = COLOR_PALETTE.get ( ' SURFACE ' , '#1a1c23' )
+TEXT_COLOR = COLOR_PALETTE.get ( 'TEXT_LIGHT' , ' #ffffff' )
 
-st.markdown(f"""
-<style>
-    /* ตกแต่งกล่องนีออนเรืองแสงหลัก */
+ส่วนลด( f"" "
+<สไตล์>
+    /*เพิ่เติมกล่องเรืองแสงหลัก */
     .neon-box {{
-        background-color: {BG_DARK};
-        padding: 25px;
-        border-radius: 15px;
-        border: 2px solid {PRIMARY};
-        box-shadow: 0 0 15px {PRIMARY};
-        margin-bottom: 20px;
+        สีพื้นหลัง: { BG_DARK } ;
+        ระยะห่างภายใน: 25 พิกเซล;
+        ขอบโค้งมน: 15 พิกเซล;
+        ขอบ: 2px ทึบ{หลัก} ;
+        เงาของกล่อง: 0 0 15px {หลัก} ;
+        ระยะขอบล่าง: 20 พิกเซล;
     }}
     /* กล่องหมายเลขนำโชคแยกเดี่ยวป้องกันโค้ดหลุด */
     .neon-lucky-card {{
-        background-color: #0d0e12;
-        padding: 15px;
-        border-radius: 10px;
-        border: 2px dashed {SECONDARY};
-        box-shadow: 0 0 10px {SECONDARY};
+        สีพื้นหลัง: #0d0e12;
+        ระยะห่างภายใน: 15 พิกเซล;
+        ขอบโค้งมน: 10 พิกเซล;
+        ขอบ: เส้นประ 2 พิกเซล{รอง} ;
+        เงาของกล่อง: 0 0 10px {รอง} ;
         text-align: center;
         margin: 10px 0;
     }}
@@ -137,220 +137,207 @@ selected_date = st.date_input(
 )
 
 st.markdown("---")
+# ==========================================================
+# [NEW!!] CONFIGURATION & CYBER UI DESIGN (CUSTOM CSS Add-ons)
+# ==========================================================
+st.markdown(f"""
+<style>
+    /* ตกแต่งช่องกรอกให้มีนีออนแยกสีตามลำดับ User */
+    .stDateInput div[data-baseweb="input"] {{
+        border: 2px solid {PRIMARY};
+        box-shadow: 0 0 10px {PRIMARY};
+        background: {BG_DARK};
+    }}
+    .stDateInput:last-of-type div[data-baseweb="input"] {{
+        border: 2px solid #ff00ff;
+        box-shadow: 0 0 10px #ff00ff;
+    }}
+</style>
+""", unsafe_allow_html=True)
 
 # ==========================================================
-# PROCESSING & OUTPUT SECTION
+# HEADER & LOGO DISPLAY
 # ==========================================================
-if st.button("🚀 เริ่มต้นระบบคำนวณและซิงค์สัญญาณนีออน", use_container_width=True):
-    with st.spinner("⚡ กำลังประมวลผลอัลกอริทึมและผสานค่าดาราศาสตร์สากล..."):
+if os.path.exists("logo1.png"):
+    st.image("logo1.png", width=120)
+
+st.markdown(f"<h1 style='margin-top:0;'>🧠 <span class='neon-text-primary'>SYNAPSE</span></h1>", unsafe_allow_html=True)
+st.caption("🌌 Sound & Visual PERSONAL & PAIR Therapy Resonance Engine")
+
+st.info(ENTERTAINMENT_DISCLAIMER)
+st.markdown("---")
+
+# ==========================================================
+# [UPDATE!!] INPUT SECTION — รองรับ 2 พิกัดวันเกิด
+# ==========================================================
+st.subheader("📅 ระบุพิกัดคู่รหัสจักรวาล (Birth Sign Pair Integration)")
+
+col_input1, col_input2 = st.columns(2)
+
+with col_input1:
+    st.markdown(f"<p style='color:{PRIMARY}; font-weight:bold; margin-bottom:0;'>🎁 พิกัดตัวคุณ (User 1)</p>", unsafe_allow_html=True)
+    selected_date1 = st.date_input(
+        "วันเกิด User 1:",
+        value=datetime(2000, 1, 1),
+        key="date1"
+    )
+
+with col_input2:
+    st.markdown(f"<p style='color:#ff00ff; font-weight:bold; margin-bottom:0;'>🔗 พิกัดคู่ของคุณ (User 2)</p>", unsafe_allow_html=True)
+    selected_date2 = st.date_input(
+        "วันเกิด User 2:",
+        value=datetime(2000, 1, 10),
+        key="date2"
+    )
+
+st.markdown("---")
+
+# ==========================================================
+# [UPDATE!!] PROCESSING & OUTPUT SECTION — ระบบตรวจคู่สมพงษ์
+# ==========================================================
+if st.button("🧬 เริ่มต้นระบบตรวจการสะท้อนพ้องของคลื่น (SYNC PAIR)", use_container_width=True):
+    with st.spinner("⚡ กำลังผสานคลื่นพลังงานและวิเคราะห์สัดส่วนทองคำ..."):
         try:
-            # 1. ถอดรหัสค่าวัน-เดือน
-            weekday_names_th = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"]
-            current_weekday_name = weekday_names_th[selected_date.weekday()]
-            auto_weekday_code = WEEKDAYS_TH.get(current_weekday_name, 1)
-            
-            thai_months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", 
-                           "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
-            current_month_name = thai_months[selected_date.month - 1]
-            auto_month_code = MONTHS.get(current_month_name, 1)
-            
-            # 2. ถอดรหัสปีนักษัตรและคำนวณวันจันทรคติ
-            auto_zodiac_code, display_zodiac_name = get_thai_zodiac_code(selected_date.year)
-            auto_lunar = get_lunar_phase_day(selected_date)
-            
-            # 3. สั่งประมวลผลผ่าน Engine หลัก
             engine = SynapseEngine()
-            result = engine.calculate(
-                weekday=auto_weekday_code,
-                month=auto_month_code,
-                zodiac=auto_zodiac_code,
-                lunar=auto_lunar
-            )
             
-            # ดึงตัวแปรผลลัพธ์ย่อยทั้งหมดออกมาใช้งาน
-            recommended_freq = result.get('frequency', 0.0)
-            calc_day = result.get('day', 0.0)
-            calc_month = result.get('month', 0.0)
-            calc_zodiac = result.get('zodiac', 0.0)
-            calc_lunar = result.get('lunar', 0.0)
-            calc_total = result.get('total', 0.0)
-            calc_energy = result.get('energy', 0.0)
-            calc_root = result.get('root', 2)
+            # --- ฟังก์ชันช่วยสกัดรหัส (Helper) ---
+            def parse_date_inputs(selected_date):
+                weekday_names_th = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"]
+                current_weekday_name = weekday_names_th[selected_date.weekday()]
+                auto_weekday_code = WEEKDAYS_TH.get(current_weekday_name, 1)
+                thai_months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กุมภาพันธ์", "กุมภาพันธ์", "กุมภาพันธ์", "กุมภาพันธ์", "กุมภาพันธ์", "กุมภาพันธ์"]
+                current_month_name = thai_months[selected_date.month - 1]
+                auto_month_code = MONTHS.get(current_month_name, 1)
+                auto_zodiac_code, display_zodiac_name = get_thai_zodiac_code(selected_date.year)
+                auto_lunar = get_lunar_phase_day(selected_date)
+                return {
+                    "weekday": auto_weekday_code, "month": auto_month_code, "zodiac": auto_zodiac_code, "lunar": auto_lunar,
+                    "display_weekday": current_weekday_name, "display_month": current_month_name, "display_zodiac": display_zodiac_name
+                }
             
-            # 🔮 อัลกอริทึมสกัดเลขเด่น 3 ตัว และเลขท้าย 2 ตัว
-            freq_str = f"{recommended_freq:.4f}".replace('.', '')
-            digit_3 = freq_str[1:4]   
-            digit_2 = freq_str[-3:-1] 
+            # --- คำนวณคลื่นของทั้งสองคนแยกกัน ---
+            data1 = parse_date_inputs(selected_date1)
+            data2 = parse_date_inputs(selected_date2)
             
-            st.success("✨ สัญญาณเสถียร! ถอดรหัสโครงสร้างคลื่นสำเร็จ")
+            result1 = engine.calculate(data1["weekday"], data1["month"], data1["zodiac"], data1["lunar"])
+            result2 = engine.calculate(data2["weekday"], data2["month"], data2["zodiac"], data2["lunar"])
             
-            # 🌟 ส่วนที่ 1: การ์ดนีออนแสดงผลข้อมูลวันเกิดและความถี่หลัก
-            st.markdown(f"""
-            <div class="neon-box">
-                <h4 style="margin-top:0; color:{TEXT_COLOR};">📡 สรุปสัญญาณผลลัพธ์ SYNAPSE</h4>
-                <p style="color:{TEXT_COLOR}; font-size:15px; margin-bottom:5px;">
-                    <b>พิกัดวันเกิดของคุณ:</b> วัน{current_weekday_name}ที่ {selected_date.day} {current_month_name} ค.ศ. {selected_date.year}
-                </p>
-                <p style="color:{TEXT_COLOR}; font-size:14px; opacity:0.8; margin-bottom:15px;">
-                    รหัสตัวแปร: วัน ({auto_weekday_code}) | เดือน ({auto_month_code}) | ปี{display_zodiac_name} ({auto_zodiac_code}) | ดิถีดวงจันทร์ ({auto_lunar})
-                </p>
-                <hr style="border-color:#333; margin:15px 0;">
-                <p style="color:{TEXT_COLOR}; font-size:16px; margin-bottom:5px;">✨ คลื่นความถี่จำลองที่แนะนำสำหรับคุณ:</p>
-                <h2 class="neon-text-primary" style="margin:0; font-size:38px;">{recommended_freq:.4f} Hz</h2>
-            </div>
-            """, unsafe_allow_html=True)
+            freq1 = result1.get('frequency', 0.0)
+            freq2 = result2.get('frequency', 0.0)
             
-            # 🌟 ส่วนที่ 2: แสดงผลเลขเด่น 3 ตัว และ 2 ตัว
-            st.write("🔮 **SYNAPSE MATRIX NUMBERS (รหัสตัวเลขนำโชคถอดสัญญาณ):**")
-            lucky_col1, lucky_col2 = st.columns(2)
+            # --- 🔮 ระบบคำนวณ Resonance Match (เกณฑ์ระยะที่กำหนด) ---
+            # 1. หาความต่าง %
+            diff_percent = abs(freq1 - freq2) / max(freq1, freq2) * 100
             
-            with lucky_col1:
-                st.markdown(f"""
-                <div class="neon-lucky-card">
-                    <span style="color:{TEXT_COLOR}; font-size:13px; opacity:0.8;">เลขเด่น (3 ตัว)</span>
-                    <div class="lucky-number-style">{digit_3}</div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-            with lucky_col2:
-                st.markdown(f"""
-                <div class="neon-lucky-card" style="border-color:{PRIMARY}; box-shadow: 0 0 10px {PRIMARY};">
-                    <span style="color:{TEXT_COLOR}; font-size:13px; opacity:0.8;">เลขท้าย (2 ตัว)</span>
-                    <div class="lucky-number-style" style="color:{PRIMARY}; text-shadow: 0 0 10px #ffffff, 0 0 20px {PRIMARY};">{digit_2}</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-                        # 🌟 ส่วนที่ 3: 🌀 [อัปเดต] เครื่องจำลองรูปร่างมิติคลื่นสมอง (Dynamic Shape Neon Resonance)
-            st.write("🌌 **เครื่องจำลองมิติคลื่นสมอง (Personalized Neon Therapy Resonance):**")
+            # 2. หาอัตราส่วนสำหรับดักจับ "คู่แท้รหัสจักรวาล" (Phi)
+            ratio = max(freq1, freq2) / min(freq1, freq2)
+            is_phi_match = abs(ratio - 1.618034) < 0.016  # ยอมรับความคลาดเคลื่อน 1%
             
-            # ลอจิก 1: เปลี่ยนความเร็วการหมุนตามตัวเลขความถี่
-            rotate_speed = max(1.5, min(12.0, 500.0 / recommended_freq))
+            # 3. กำหนดสถานะและสีตามระยะเปอร์เซ็นต์
+            match_score = 0
+            match_status = ""
+            match_color = ""
             
-            # ลอจิก 2: ถอดรหัสผลรวมพลังงานมาเลือก "รูปร่างของภาพนีออน" (ได้ 4 รูปร่างไม่ซ้ำกันตามดวง)
-            shape_index = int(abs(calc_total * recommended_freq)) % 4
-            
-            if shape_index == 0:
-                # 🟢 รูปร่างที่ 1: ทรงกลมพลังงาน
-                border_style = "border-radius: 50%;"
-                shape_name = "Cosmic Sphere (ทรงกลมพลังงานสมบูรณ์)"
-            elif shape_index == 1:
-                # 🟡 รูปร่างที่ 2: ทรงหยดน้ำควอนตัม
-                border_style = "border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;"
-                shape_name = "Fluid Capsule (รูปทรงหยดน้ำควอนตัม)"
-            elif shape_index == 2:
-                # 🔵 รูปร่างที่ 3: ทรงผลึกคริสตัลไซเบอร์
-                border_style = "border-radius: 0%; transform: rotate(45deg); max-width: 100px; max-height: 100px; margin: 20px auto;"
-                shape_name = "Cyber Crystal (รูปทรงผลึกคริสตัลเรืองแสง)"
+            if is_phi_match:
+                match_status = "🏆 Cosmic Soulmates (คู่แท้บุพเพสันนิวาสแห่งจักรวาล)"
+                match_color = "#ffd700"  # สีทอง
+                match_score = 100
+            elif diff_percent <= 2.5:
+                match_status = "🟢 Perfect Resonance (คู่มิตรแท้ส่งเสริมกัน)"
+                match_color = SECONDARY  # สีเขียวนีออน
+                match_score = int(100 - (diff_percent * 4))  
+            elif diff_percent <= 7.5:
+                match_status = "🟡 Harmonic Balance (คู่พันธมิตรปลอดภัย)"
+                match_color = PRIMARY  # สีฟ้านีออน
+                match_score = int(90 - (diff_percent * 3))
+            elif diff_percent <= 15.0:
+                match_status = "🔵 Dynamic Friction (คู่เหวี่ยงท้าทาย)"
+                match_color = "#ff00ff"  # สีชมพู
+                match_score = int(70 - (diff_percent * 2))
             else:
-                # 🟣 รูปร่างที่ 4: รูปทรงโล่ห์นีออน
-                border_style = "border-radius: 50% 50% 0% 0% / 40% 40% 0% 0%;"
-                shape_name = "Aegis Matrix (รูปทรงโล่ห์ป้องกันไซไฟ)"
+                match_status = "🔴 Dissonance Wave (คู่อริหักล้างรุนแรง)"
+                match_color = "#ff3333"  # สีแดง
+                match_score = max(10, int(40 - (diff_percent * 0.5))) # ให้คะแนนขั้นต่ำ 10
 
-            # แสดงผลภาพกราฟิกนีออนที่เจนรูปทรงและเปลี่ยนตามวันเกิดจริง
-            # สำหรับรูปคริสตัล (shape_index == 2) เราจะแยกสไตล์อนิเมะหมุนให้มันไม่เบี้ยวครับ
-            animation_name = "spinCube" if shape_index == 2 else "spinNeon"
+            st.success("✨ สัญญาณเสถียร! ถอดรหัสโครงสร้างคลื่นคู่สำเร็จ")
+            st.markdown(f"<p style='color:{match_color}; font-size:14px;'>🧬 ระบบวัดความ Resonance สำเร็จ: ห่างกัน {diff_percent:.2f}%</p>", unsafe_allow_html=True)
             
+            # 🌟 ส่วนที่ 1: การ์ดสถานะ Resonance นีออน (ไฮไลท์ของโหมดคู่)
             st.markdown(f"""
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0d0e12; padding: 30px; border-radius: 12px; border: 1px solid #222; margin: 15px 0;">
-                <div style="
-                    width: 130px; 
-                    height: 130px; 
-                    border: 4px double {PRIMARY};
-                    box-shadow: 0 0 20px {PRIMARY}, inset 0 0 15px {PRIMARY};
-                    {border_style}
-                    animation: {animation_name} {rotate_speed}s linear infinite;
-                "></div>
-                <span style="color: {SECONDARY}; font-size: 13px; font-weight: bold; margin-top: 25px; letter-spacing: 1px;">
-                    🔮 รูปร่างสัญญาณจิต: <span style="color:#ffffff;">{shape_name}</span>
-                </span>
-                <span style="color: {PRIMARY}; font-size: 10px; letter-spacing: 2px; margin-top: 5px; text-transform: uppercase; opacity: 0.6;">⚡ Visualizer Shape Sync Active ⚡</span>
+            <div class="neon-lucky-card" style="border: 3px double {match_color}; box-shadow: 0 0 20px {match_color}; margin-top: 20px;">
+                <span style="color:{TEXT_COLOR}; font-size:14px; opacity:0.8; text-transform: uppercase; letter-spacing: 2px;">SYNAPSE PAIR STATUS</span>
+                <div style="color:{match_color}; font-size:32px; font-weight:bold; text-shadow: 0 0 10px #ffffff, 0 0 20px {match_color}; margin: 10px 0;">
+                    {match_status}
+                </div>
+                <hr style="border-color:#333; margin:10px 0;">
+                <span style="color:#ffffff; font-size:16px;">💯 คะแนนความสมดุลพ้องของคลื่น: <span style="font-size:36px; font-weight:bold; color:{match_color};">{match_score}%</span></span>
             </div>
-            <style>
-                @keyframes spinNeon {{
-                    0% {{ transform: rotate(0deg); box-shadow: 0 0 15px {PRIMARY}, inset 0 0 10px {PRIMARY}; border-color: {PRIMARY}; }}
-                    50% {{ box-shadow: 0 0 30px {SECONDARY}, inset 0 0 20px {SECONDARY}; border-color: {SECONDARY}; }}
-                    100% {{ transform: rotate(360deg); box-shadow: 0 0 15px {PRIMARY}, inset 0 0 10px {PRIMARY}; border-color: {PRIMARY}; }}
-                }}
-                @keyframes spinCube {{
-                    0% {{ transform: rotate(45deg); box-shadow: 0 0 15px {PRIMARY}; border-color: {PRIMARY}; }}
-                    50% {{ box-shadow: 0 0 30px {SECONDARY}; border-color: {SECONDARY}; }}
-                    100% {{ transform: rotate(405deg); box-shadow: 0 0 15px {PRIMARY}; border-color: {PRIMARY}; }}
-                }}
-            </style>
             """, unsafe_allow_html=True)
 
-
-            # 🌟 ส่วนที่ 4: 🎵 ระบบดึงเพลงอัจฉริยะควบคู่กับวงแหวนบำบัด
-            my_playlist = glob.glob("*.mp3")
+            # 🌟 ส่วนที่ 2: ผังวิเคราะห์คลื่นคู่ (Wave Pair Visualizer — ภาพวงแหวนซ้อนทับ)
+            st.write("🌌 **ผังวิเคราะห์โครงสร้างคลื่นคู่ (Dynamic Pair Visualizer Active):**")
             
-            st.write("🎵 **ระบบจำลองสัญญาณคลื่นเสียง (Frequencies Bio-feedback Active):**")
+            # ลอจิกเจนรูปร่างต่างกันตามผลรวม
+            def get_neon_shape(calc_total, recommended_freq, primary_color):
+                shape_index = int(abs(calc_total * recommended_freq)) % 4
+                if shape_index == 0: return f"border-radius: 50%;"
+                elif shape_index == 1: return f"border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;"
+                elif shape_index == 2: return f"border-radius: 0%; transform: rotate(45deg); max-width: 90px; max-height: 90px; margin: 10px;"
+                else: return f"border-radius: 50% 50% 0% 0% / 40% 40% 0% 0%;"
+
+            shape1_style = get_neon_shape(result1['total'], freq1, PRIMARY)
+            shape2_style = get_neon_shape(result2['total'], freq2, "#ff00ff") # ใช้สีชมพูสำหรับคนที่ 2
+            
+            # ภาพวงแหวนซ้อนทับกัน (Overlay) เหมือนผังดาว
+            st.markdown(f"""
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0d0e12; padding: 40px; border-radius: 12px; border: 1px solid #222; margin: 15px 0;">
+                <div style="position: relative; width: 150px; height: 150px; display: flex; align-items: center; justify-content: center;">
+                    <div style="position: absolute; width: 140px; height: 140px; border: 4px double {PRIMARY}; box-shadow: 0 0 15px {PRIMARY}, inset 0 0 10px {PRIMARY}; {shape1_style}"></div>
+                    <div style="position: absolute; width: 110px; height: 110px; border: 4px double #ff00ff; box-shadow: 0 0 15px #ff00ff, inset 0 0 10px #ff00ff; opacity: 0.8; {shape2_style}"></div>
+                </div>
+                <div style="display: flex; gap: 30px; margin-top: 30px; font-size: 13px;">
+                    <span style="color: {PRIMARY}; border-bottom: 2px solid {PRIMARY};">User 1 ({freq1:.2f} Hz)</span>
+                    <span style="color: #ff00ff; border-bottom: 2px solid #ff00ff;">User 2 ({freq2:.2f} Hz)</span>
+                </div>
+                <span style="color: {match_color}; font-size: 11px; letter-spacing: 2px; margin-top: 15px; text-transform: uppercase; opacity: 0.8;">⚡ Visualizer Shape Match Sync Active ⚡</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("---")
+            
+            # 🌟 ส่วนที่ 3: ระบบเพลงคู่ (แมตช์ตามค่ารวมความถี่ทั้งสอง)
+            my_playlist = glob.glob("*.mp3")
+            st.write("🎵 **ระบบคัดสรรบทเพลงสำหรับคู่เรา (Personalized Pair Active Trace):**")
             
             if len(my_playlist) > 0:
                 my_playlist.sort()
-                
-                # แมตช์ลำดับเพลงตามดวงความถี่
-                playlist_index = int(abs(calc_total * recommended_freq)) % len(my_playlist)
+                # ลอจิกใหม่: ใช้ผลรวมความถี่ทั้งสองคนหารเศษเพื่อเลือกเพลง
+                playlist_index = int(abs(result1['total'] + result2['total']) * (freq1 + freq2)) % len(my_playlist)
                 audio_filename = my_playlist[playlist_index]
-                
-                # เรียกสตรีมมิ่งผ่าน st.audio
                 st.audio(audio_filename, format="audio/mp3")
-                st.caption(f"✨ *ระบบคัดสรรบทเพลง: `{audio_filename}` เพื่อซิงค์เข้ากับระดับจิตใจของท่าน*")
+                st.caption(f"✨ *บทเพลง `{audio_filename}` ถูกเลือกมาเพื่อจูนพลังงานของทั้งสองคนให้เข้าหากัน*")
             else:
-                st.warning("⚠️ ไม่พบไฟล์เพลง .mp3 ในโฟลเดอร์หลักบน GitHub")
+                st.warning("⚠️ ไม่พบไฟล์เพลง .mp3 ในโฟลเดอร์หลัก")
 
-            # 🌟 ส่วนที่ 5: แถบแอนิเมชันจำลองการปล่อยคลื่นเสียงบำบัด
-            st.markdown(
-                '<div class="wave-container">' + ''.join(['<div class="bar"></div>' for _ in range(35)]) + '</div>', 
-                unsafe_allow_html=True
-            )
-            
-            # 🌟 ส่วนที่ 6: แผงแจกแจงที่มาและสูตรคำนวณ
-            st.subheader("🧮 แผงวงจรคำนวณและค่าคงที่สากล (Math Matrix)")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric(label="📊 ผลลัพธ์ปัจจัยรายวัน (Day Factor)", value=f"{calc_day:.4f}")
-                st.metric(label="🌙 ผลลัพธ์ปัจจัยจันทรคติ (Lunar Factor)", value=f"{calc_lunar:.4f}")
-                st.markdown(f"**📐 ค่าสัดส่วนทองคำธรรมชาติ ($\Phi$):** `{PHI}`")
-            
-            with col2:
-                st.metric(label="📅 ผลลัพธ์ปัจจัยรายเดือน (Month Factor)", value=f"{calc_month:.4f}")
-                st.metric(label="🧬 ผลลัพธ์ปัจจัยราศี (Zodiac Factor)", value=f"{calc_zodiac:.4f}")
-                st.markdown(f"**🌑 รอบดวงจันทร์ดาราศาสตร์:** `{SYNODIC_MONTH}` วัน")
+            # 🌟 ส่วนที่ 4: แผงmetric เปรียบเทียบรหัสปัจจัยดิบของทั้งคู่
+            st.subheader("🧮 แผงแจกแจงพิกัดรหัสจักรวาล (Math Matrix Comparison)")
+            col_metric1, col_metric2 = st.columns(2)
+            with col_metric1:
+                st.markdown(f"<p style='color:{PRIMARY}; font-weight:bold; margin-bottom:0;'>User 1 (🎁)</p>", unsafe_allow_html=True)
+                st.metric("ความถี่ (Hz)", f"{freq1:.4f} Hz")
+                st.markdown(f"**รหัส:** วัน ({data1['weekday']}) เดือน ({data1['month']}) {data1['display_zodiac']} ({data1['zodiac']}) Lunar ({data1['lunar']})")
                 
-            st.markdown("---")
-            
-            # รายละเอียดสรุปสมการ
-            st.info(f"""
-            💡 **ถอดรหัสลอจิกคณิตศาสตร์หลังบ้าน:**
-            1. ระบบนำค่าตัวแปรวันเกิดที่แปลงเป็นรหัสแล้ว ไปคำนวณร่วมกับเครื่องยนต์หลักจนได้ผลรวมปัจจัยดิบ **{calc_total:.4f}**
-            2. นำไปประมวลผลสัญญาณจนได้ค่าพลังงานสุทธิที่ **{calc_energy:.4f}** แล้วนำไปถอดค่ารากกำลังระดับมิติ **รากที่ {calc_root}**
-            3. นำพลังงานสุดท้ายผสานร่วมกับอัตราส่วนทองคำธรรมชาติ **({PHI:.4f})** ออกมาเป็นคลื่นเฉพาะบุคคล **{recommended_freq:.4f} Hz** และสกัดรหัส Matrix ออกมาเป็นเลข **{digit_3}** และ **{digit_2}**
-            """)
-            
-            # 🌟 ส่วนที่ 7: ปุ่มกดดาวน์โหลดเอกสารรายงานสรุปสัญญาณ
-            report_text = f"""--- SYNAPSE ENGINE REPORT ---
-Date Calculated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-User Birthday: {selected_date.strftime('%Y-%m-%d')}
----------------------------------
-[Final personal Frequency Output]
-=> RECOMMENDED FREQUENCY: {recommended_freq} Hz
-=> MATRIX CODES DECODED: 3-Digits [{digit_3}] | 2-Digits [{digit_2}]
----------------------------------
-"""
-            st.download_button(
-                label="📥 ดาวน์โหลดบันทึกผลการถอดรหัสคลื่น (.txt)",
-                data=report_text,
-                file_name=f"synapse_signal_{selected_date.strftime('%Y%m%d')}.txt",
-                mime="text/plain",
-                use_container_width=True
-            )
-            
-            # ส่วนตรวจดู JSON
-            with st.expander("🔍 ตรวจสอบโครงสร้างระบบดิบ (JSON Metadata)"):
-                st.json({"inputs_parsed_to_engine_codes": {"weekday_code": auto_weekday_code, "month_code": auto_month_code, "zodiac_code": auto_zodiac_code, "lunar_phase": auto_lunar}, "engine_result": result})
+            with col_metric2:
+                st.markdown(f"<p style='color:#ff00ff; font-weight:bold; margin-bottom:0;'>User 2 (🔗)</p>", unsafe_allow_html=True)
+                st.metric("ความถี่ (Hz)", f"{freq2:.4f} Hz")
+                st.markdown(f"**รหัส:** วัน ({data2['weekday']}) เดือน ({data2['month']}) {data2['display_zodiac']} ({data2['zodiac']}) Lunar ({data2['lunar']})")
+
+            # ส่วนตรวจดู JSON คู่
+            with st.expander("🔍 ตรวจสอบโครงสร้างระบบดิบ (Pair JSON Metadata)"):
+                st.json({"inputs_v1_v2": {"user1": data1, "user2": data2}, "engine_result_v1": result1, "engine_result_v2": result2, "resonance_score": {"diff_percent": diff_percent, "ratio": ratio, "status": match_status, "phi_match": is_phi_match}})
                 
         except Exception as e:
-            st.error(f"เกิดข้อผิดพลาดในระบบ Engine: {str(e)}")
-            st.info("โปรดลอง Reboot App ในแถบเมนู Manage app อีกครั้งเพื่อเคลียร์ Cache")
-    
+            st.error(f"เกิดข้อผิดพลาดในระบบ Sync: {str(e)}")
+            st.info("โปรดลอง Reboot App ในแถบเมนู Manage app อีกครั้ง")
+
+        
