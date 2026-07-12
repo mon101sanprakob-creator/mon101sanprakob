@@ -1,3 +1,4 @@
+import streamlit as st
 import sys
 import os
 import glob
@@ -17,6 +18,8 @@ from engine.synapse_engine import SynapseEngine
 # ==========================================================
 def get_lunar_phase_day(target_date):
     """คำนวณดิถีดวงจันทร์โดยอ้างอิงรอบดวงจันทร์จาก constants.py"""
+    if isinstance(target_date, datetime):
+        target_date = target_date.date()
     base_date = datetime(2000, 1, 6).date()  
     diff_days = (target_date - base_date).days
     lunar_age = diff_days % SYNODIC_MONTH
@@ -32,37 +35,34 @@ def get_thai_zodiac_code(year):
     return ZODIAC.get(zodiac_name, 1), zodiac_name
 
 # ==========================================================
-# การกำหนดค่าและการออกแบบอินเทอร์เฟซนีออน (CSS แบบกำหนดเอง)
+# CONFIGURATION & NEON INTERFACE DESIGN (คำสั่งนี้ต้องอยู่บนสุดของ Streamlit)
 # ==========================================================
-st.set_page_config ( page_title = "SYNAPSE" , layout= "centered" )
+st.set_page_config(page_title="SYNAPSE", layout="centered")
 
-#ดึงสีจากระบบมาสร้างสไตล์นีออนเรืองแสง
-PRIMARY = COLOR_PALETTE.get ( ' PRIMARY' , '#00ccff' )
-SECONDARY = COLOR_PALETTE.get ( ' SECONDARY' , '#00ff99' )
-BG_DARK = COLOR_PALETTE.get ( ' SURFACE ' , '#1a1c23' )
-TEXT_COLOR = COLOR_PALETTE.get ( 'TEXT_LIGHT' , ' #ffffff' )
+# ดึงสีจากระบบมาสร้างสไตล์นีออนเรืองแสง
+PRIMARY = COLOR_PALETTE.get('PRIMARY', '#00ccff')
+SECONDARY = COLOR_PALETTE.get('SECONDARY', '#00ff99')
+BG_DARK = COLOR_PALETTE.get('SURFACE', '#1a1c23')
+TEXT_COLOR = COLOR_PALETTE.get('TEXT_LIGHT', '#ffffff')
 
 st.markdown(f"""
 <style>
-    /* ตกแต่งช่องกรอกให้มีนีออนแยกสีตามลำดับ User */
-    .stDateInput div[data-baseweb="input"] {{
-    >
-    /*เพิ่เติมกล่องเรืองแสงหลัก */
+    /* ตกแต่งกล่องนีออนเรืองแสงหลัก */
     .neon-box {{
-        สีพื้นหลัง: { BG_DARK } ;
-        ระยะห่างภายใน: 25 พิกเซล;
-        ขอบโค้งมน: 15 พิกเซล;
-        ขอบ: 2px  {หลัก} ;
-        เงาของกล่อง: 0 0 15px {หลัก} ;
-        ระยะขอบล่าง: 20 พิกเซล;
+        background-color: {BG_DARK};
+        padding: 25px;
+        border-radius: 15px;
+        border: 2px solid {PRIMARY};
+        box-shadow: 0 0 15px {PRIMARY};
+        margin-bottom: 20px;
     }}
     /* กล่องหมายเลขนำโชคแยกเดี่ยวป้องกันโค้ดหลุด */
     .neon-lucky-card {{
-        สีพื้นหลัง: #0d0e12;
-        ระยะห่างภายใน: 15 พิกเซล;
-        ขอบโค้งมน: 10 พิกเซล;
-        ขอบ: เส้นประ 2 พิกเซล{รอง} ;
-        เงาของกล่อง: 0 0 10px {รอง} ;
+        background-color: #0d0e12;
+        padding: 15px;
+        border-radius: 10px;
+        border: 2px dashed {SECONDARY};
+        box-shadow: 0 0 10px {SECONDARY};
         text-align: center;
         margin: 10px 0;
     }}
@@ -111,39 +111,6 @@ st.markdown(f"""
         0% {{ height: 10px; transform: scaleY(1); }}
         100% {{ height: 45px; transform: scaleY(1.1); box-shadow: 0 0 10px {SECONDARY}; }}
     }}
-</style>
-""", unsafe_allow_html=True)
-
-# ==========================================================
-# HEADER & LOGO DISPLAY
-# ==========================================================
-if os.path.exists("logo1.png"):
-    st.image("logo1.png", width=120)
-
-st.markdown(f"<h1 style='margin-top:0;'>🧠 <span class='neon-text-primary'>SYNAPSE</span></h1>", unsafe_allow_html=True)
-st.caption("🌌 Sound & Visual Personal Therapy Engine — Cyberpunk Edition")
-
-st.info(ENTERTAINMENT_DISCLAIMER)
-st.markdown("---")
-
-# ==========================================================
-# INPUT SECTION
-# ==========================================================
-st.subheader("📅 ระบุพิกัดเวลาเกิด (Birth Sign Integration)")
-
-selected_date = st.date_input(
-    "เลือก วัน/เดือน/ปี ค.ศ. เกิดของคุณ:",
-    value=datetime(2000, 1, 1),
-    min_value=datetime(1900, 1, 1),
-    max_value=datetime(2026, 12, 31)
-)
-
-st.markdown("---")
-# ==========================================================
-# [NEW!!] CONFIGURATION & CYBER UI DESIGN (CUSTOM CSS Add-ons)
-# ==========================================================
-st.markdown(f"""
-<style>
     /* ตกแต่งช่องกรอกให้มีนีออนแยกสีตามลำดับ User */
     .stDateInput div[data-baseweb="input"] {{
         border: 2px solid {PRIMARY};
@@ -170,7 +137,7 @@ st.info(ENTERTAINMENT_DISCLAIMER)
 st.markdown("---")
 
 # ==========================================================
-# [UPDATE!!] INPUT SECTION — รองรับ 2 พิกัดวันเกิด
+# INPUT SECTION — รองรับ 2 พิกัดวันเกิด
 # ==========================================================
 st.subheader("📅 ระบุพิกัดคู่รหัสจักรวาล (Birth Sign Pair Integration)")
 
@@ -195,7 +162,7 @@ with col_input2:
 st.markdown("---")
 
 # ==========================================================
-# [UPDATE!!] PROCESSING & OUTPUT SECTION — ระบบตรวจคู่สมพงษ์
+# PROCESSING & OUTPUT SECTION — ระบบตรวจคู่สมพงษ์
 # ==========================================================
 if st.button("🧬 เริ่มต้นระบบตรวจการสะท้อนพ้องของคลื่น (SYNC PAIR)", use_container_width=True):
     with st.spinner("⚡ กำลังผสานคลื่นพลังงานและวิเคราะห์สัดส่วนทองคำ..."):
@@ -207,7 +174,7 @@ if st.button("🧬 เริ่มต้นระบบตรวจการส�
                 weekday_names_th = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"]
                 current_weekday_name = weekday_names_th[selected_date.weekday()]
                 auto_weekday_code = WEEKDAYS_TH.get(current_weekday_name, 1)
-                thai_months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กุมภาพันธ์", "กุมภาพันธ์", "กุมภาพันธ์", "กุมภาพันธ์", "กุมภาพันธ์", "กุมภาพันธ์"]
+                thai_months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
                 current_month_name = thai_months[selected_date.month - 1]
                 auto_month_code = MONTHS.get(current_month_name, 1)
                 auto_zodiac_code, display_zodiac_name = get_thai_zodiac_code(selected_date.year)
@@ -227,44 +194,40 @@ if st.button("🧬 เริ่มต้นระบบตรวจการส�
             freq1 = result1.get('frequency', 0.0)
             freq2 = result2.get('frequency', 0.0)
             
-            # --- 🔮 ระบบคำนวณ Resonance Match (เกณฑ์ระยะที่กำหนด) ---
-            # 1. หาความต่าง %
+            # --- 🔮 ระบบคำนวณ Resonance Match ---
             diff_percent = abs(freq1 - freq2) / max(freq1, freq2) * 100
-            
-            # 2. หาอัตราส่วนสำหรับดักจับ "คู่แท้รหัสจักรวาล" (Phi)
             ratio = max(freq1, freq2) / min(freq1, freq2)
-            is_phi_match = abs(ratio - 1.618034) < 0.016  # ยอมรับความคลาดเคลื่อน 1%
+            is_phi_match = abs(ratio - 1.618034) < 0.016  
             
-            # 3. กำหนดสถานะและสีตามระยะเปอร์เซ็นต์
             match_score = 0
             match_status = ""
             match_color = ""
             
             if is_phi_match:
                 match_status = "🏆 Cosmic Soulmates (คู่แท้บุพเพสันนิวาสแห่งจักรวาล)"
-                match_color = "#ffd700"  # สีทอง
+                match_color = "#ffd700"  
                 match_score = 100
             elif diff_percent <= 2.5:
                 match_status = "🟢 Perfect Resonance (คู่มิตรแท้ส่งเสริมกัน)"
-                match_color = SECONDARY  # สีเขียวนีออน
+                match_color = SECONDARY  
                 match_score = int(100 - (diff_percent * 4))  
             elif diff_percent <= 7.5:
                 match_status = "🟡 Harmonic Balance (คู่พันธมิตรปลอดภัย)"
-                match_color = PRIMARY  # สีฟ้านีออน
+                match_color = PRIMARY  
                 match_score = int(90 - (diff_percent * 3))
             elif diff_percent <= 15.0:
                 match_status = "🔵 Dynamic Friction (คู่เหวี่ยงท้าทาย)"
-                match_color = "#ff00ff"  # สีชมพู
+                match_color = "#ff00ff"  
                 match_score = int(70 - (diff_percent * 2))
             else:
                 match_status = "🔴 Dissonance Wave (คู่อริหักล้างรุนแรง)"
-                match_color = "#ff3333"  # สีแดง
-                match_score = max(10, int(40 - (diff_percent * 0.5))) # ให้คะแนนขั้นต่ำ 10
+                match_color = "#ff3333"  
+                match_score = max(10, int(40 - (diff_percent * 0.5)))
 
             st.success("✨ สัญญาณเสถียร! ถอดรหัสโครงสร้างคลื่นคู่สำเร็จ")
             st.markdown(f"<p style='color:{match_color}; font-size:14px;'>🧬 ระบบวัดความ Resonance สำเร็จ: ห่างกัน {diff_percent:.2f}%</p>", unsafe_allow_html=True)
             
-            # 🌟 ส่วนที่ 1: การ์ดสถานะ Resonance นีออน (ไฮไลท์ของโหมดคู่)
+            # 🌟 ส่วนที่ 1: การ์ดสถานะ Resonance นีออน
             st.markdown(f"""
             <div class="neon-lucky-card" style="border: 3px double {match_color}; box-shadow: 0 0 20px {match_color}; margin-top: 20px;">
                 <span style="color:{TEXT_COLOR}; font-size:14px; opacity:0.8; text-transform: uppercase; letter-spacing: 2px;">SYNAPSE PAIR STATUS</span>
@@ -276,21 +239,19 @@ if st.button("🧬 เริ่มต้นระบบตรวจการส�
             </div>
             """, unsafe_allow_html=True)
 
-            # 🌟 ส่วนที่ 2: ผังวิเคราะห์คลื่นคู่ (Wave Pair Visualizer — ภาพวงแหวนซ้อนทับ)
+            # 🌟 ส่วนที่ 2: ผังวิเคราะห์คลื่นคู่ (ภาพวงแหวนซ้อนทับ)
             st.write("🌌 **ผังวิเคราะห์โครงสร้างคลื่นคู่ (Dynamic Pair Visualizer Active):**")
             
-            # ลอจิกเจนรูปร่างต่างกันตามผลรวม
-            def get_neon_shape(calc_total, recommended_freq, primary_color):
+            def get_neon_shape(calc_total, recommended_freq):
                 shape_index = int(abs(calc_total * recommended_freq)) % 4
                 if shape_index == 0: return f"border-radius: 50%;"
                 elif shape_index == 1: return f"border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;"
                 elif shape_index == 2: return f"border-radius: 0%; transform: rotate(45deg); max-width: 90px; max-height: 90px; margin: 10px;"
                 else: return f"border-radius: 50% 50% 0% 0% / 40% 40% 0% 0%;"
 
-            shape1_style = get_neon_shape(result1['total'], freq1, PRIMARY)
-            shape2_style = get_neon_shape(result2['total'], freq2, "#ff00ff") # ใช้สีชมพูสำหรับคนที่ 2
+            shape1_style = get_neon_shape(result1['total'], freq1)
+            shape2_style = get_neon_shape(result2['total'], freq2)
             
-            # ภาพวงแหวนซ้อนทับกัน (Overlay) เหมือนผังดาว
             st.markdown(f"""
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0d0e12; padding: 40px; border-radius: 12px; border: 1px solid #222; margin: 15px 0;">
                 <div style="position: relative; width: 150px; height: 150px; display: flex; align-items: center; justify-content: center;">
@@ -307,13 +268,12 @@ if st.button("🧬 เริ่มต้นระบบตรวจการส�
             
             st.markdown("---")
             
-            # 🌟 ส่วนที่ 3: ระบบเพลงคู่ (แมตช์ตามค่ารวมความถี่ทั้งสอง)
+            # 🌟 ส่วนที่ 3: ระบบเพลงคู่
             my_playlist = glob.glob("*.mp3")
             st.write("🎵 **ระบบคัดสรรบทเพลงสำหรับคู่เรา (Personalized Pair Active Trace):**")
             
             if len(my_playlist) > 0:
                 my_playlist.sort()
-                # ลอจิกใหม่: ใช้ผลรวมความถี่ทั้งสองคนหารเศษเพื่อเลือกเพลง
                 playlist_index = int(abs(result1['total'] + result2['total']) * (freq1 + freq2)) % len(my_playlist)
                 audio_filename = my_playlist[playlist_index]
                 st.audio(audio_filename, format="audio/mp3")
@@ -321,7 +281,7 @@ if st.button("🧬 เริ่มต้นระบบตรวจการส�
             else:
                 st.warning("⚠️ ไม่พบไฟล์เพลง .mp3 ในโฟลเดอร์หลัก")
 
-            # 🌟 ส่วนที่ 4: แผงmetric เปรียบเทียบรหัสปัจจัยดิบของทั้งคู่
+            # 🌟 ส่วนที่ 4: แผงเปรียบเทียบรหัสปัจจัยดิบ
             st.subheader("🧮 แผงแจกแจงพิกัดรหัสจักรวาล (Math Matrix Comparison)")
             col_metric1, col_metric2 = st.columns(2)
             with col_metric1:
@@ -341,5 +301,3 @@ if st.button("🧬 เริ่มต้นระบบตรวจการส�
         except Exception as e:
             st.error(f"เกิดข้อผิดพลาดในระบบ Sync: {str(e)}")
             st.info("โปรดลอง Reboot App ในแถบเมนู Manage app อีกครั้ง")
-
-        
