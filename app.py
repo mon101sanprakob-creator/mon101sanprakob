@@ -194,6 +194,17 @@ with tab1:
                         <span style="color:#888888; font-size:10px; display:block; margin-top:5px;">*รหัสประจุพลังงานควอนตัมคู่ประจำฐานเวลา</span>
                     </div>
                     """, unsafe_allow_html=True)
+                  # แผงตรวจสอบค่าดัชนีดิบ (ปรับให้เก็บรหัสควอนตัมเข้า JSON ด้วย)
+with st.expander("🔍 ตรวจสอบโครงสร้างระบบดิบบุคคลหลัก (Main User JSON Metadata)", expanded=True):
+    st.json({
+        "user_inputs": data1,
+        "engine_calculations": result1,
+        "quantum_codes": {
+            "tri_resonance_matrix": lucky_three_1,  # ค่า 513 จะมาโชว์ในนี้
+            "binary_quantum_core": lucky_two_1      # ค่า 27 จะมาโชว์ในนี้
+        }
+    })
+
 
                 # ==========================================================
                 # 🔍 [เพิ่มตรงนี้!] แผงตรวจสอบค่าดัชนีดิบ (Main User JSON Metadata)
