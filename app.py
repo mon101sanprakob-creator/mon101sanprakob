@@ -174,14 +174,14 @@ with tab1:
                     })
 
                 # 3. โหมดบุคคลที่สองเสริม (ถ้ามี)
-                if enable_pair and selected_date2 is not None:
+    if enable_pair and selected_date2 is not None:
                     # ... โค้ดวิเคราะห์คู่ ...
                     
                 # 4. ส่วนโหลดเพลงประจำตัว
                 # ... โค้ดเล่นเพลง ...
 
             # 🚨 [จุดสำคัญ!] เช็คตรงนี้ครับ บล็อก try ด้านบนสุด ต้องมี except ตัวนี้ปิดท้ายเสมอ
-            except Exception as e:
+    except Exception as e:
                 st.error(f"เกิดข้อผิดพลาดในการประมวลผลสัญญาณ: {str(e)}")
     
 
