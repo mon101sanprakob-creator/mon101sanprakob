@@ -60,48 +60,41 @@ SECONDARY = COLOR_PALETTE.get('SECONDARY', '#00ff99')
 BG_DARK = COLOR_PALETTE.get('SURFACE', '#1a1c23')
 TEXT_COLOR = COLOR_PALETTE.get('TEXT_LIGHT', '#ffffff')
 
-st.markdown("""
+st.markdown(f"""
 <style>
-.stApp{
-    background:
-      radial-gradient(circle at top left,#2a0000 0,#000 35%),
-      radial-gradient(circle at top right,#000033 0,transparent 35%),
-      linear-gradient(135deg,#000,#111,#050505);
-    color:white;
-}
-.neon-card{
-    background:rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.15);
-    border-radius:18px;
-    backdrop-filter:blur(12px);
-    box-shadow:
-      0 0 12px #ff0040,
-      0 0 24px #0080ff,
-      inset 0 0 12px rgba(0,255,128,.2);
-    padding:1rem;
-    animation:pulse 3s infinite alternate;
-}
-@keyframes pulse{
-    from{transform:translateY(0);}
-    to{transform:translateY(-4px);}
-}
-.neon-title{
-    font-size:3rem;
-    font-weight:800;
-    background:linear-gradient(90deg,#ff3030,#3080ff,#00ff99,#d060ff,#fff);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-    text-shadow:0 0 20px rgba(255,255,255,.5);
-}
+    .neon-lucky-card {{
+        background-color: #0d0e12;
+        padding: 18px;
+        border-radius: 12px;
+        text-align: center;
+        margin: 12px 0;
+    }}
+    .neon-text-primary {{
+        color: {PRIMARY};
+        text-shadow: 0 0 8px {PRIMARY};
+        font-weight: bold;
+    }}
+    .lucky-number-style {{
+        font-size: 42px;
+        font-weight: bold;
+        color: #ffffff;
+        text-shadow: 0 0 10px #ffffff, 0 0 20px {SECONDARY};
+        letter-spacing: 5px;
+        margin-top: 5px;
+    }}
+    .stDateInput div[data-baseweb="input"] {{
+        border: 2px solid {PRIMARY};
+        box-shadow: 0 0 10px {PRIMARY};
+        background: {BG_DARK};
+    }}
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="neon-title">🧠 SYNAPSE</div>', unsafe_allow_html=True)
-
-st.markdown(
-    '<div class="neon-card">✨ ยินดีต้อนรับสู่ระบบ Sound & Visual Therapy</div>',
-    unsafe_allow_html=True
-)
+# ==========================================================
+# HEADER & LOGO
+# ==========================================================
+if os.path.exists("logo1.png"):
+    st.image("logo1.png", width=120)
 
 st.markdown(f"<h1 style='margin-top:0;'>🧠 <span class='neon-text-primary'>SYNAPSE</span></h1>", unsafe_allow_html=True)
 st.caption("🌌 Sound & Visual PERSONAL & PAIR Therapy Resonance Engine")
@@ -324,3 +317,4 @@ with tab2:
                 
             except Exception as e:
                 st.error(f"ไม่สามารถประมวลผลปฏิทินได้: {str(e)}")
+    
