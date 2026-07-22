@@ -1,13 +1,12 @@
 import streamlit as st
 import datetime
-import calendar
 import math
 import os
 import glob
 from PIL import Image
 
 # ---------------------------------------------------------
-# 1. ตั้งค่าหน้าเว็บ Streamlit (Theme & Page Config)
+# 1. ตั้งค่าหน้าเว็บ Streamlit
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="AstroTime Matrix & Music Player",
@@ -19,13 +18,10 @@ st.set_page_config(
 # Custom CSS ตกแต่งสไตล์ นีออน - ดำเงา - ทอง - แดง - เขียว - ม่วง
 st.markdown("""
 <style>
-    /* พื้นหลังหลักดำเงา */
     .stApp {
         background-color: #0a0a0c;
         color: #ffffff;
     }
-    
-    /* กรอบการ์ดพรีเมียม นีออน */
     .neon-card {
         background-color: #141419;
         border: 1px solid #00f3ff;
@@ -33,7 +29,7 @@ st.markdown("""
         border-radius: 12px;
         padding: 20px;
         margin-bottom: 15px;
- Image
+    }
     .neon-card-purple {
         background-color: #141419;
         border: 1px solid #b000ff;
@@ -42,8 +38,6 @@ st.markdown("""
         padding: 20px;
         margin-bottom: 15px;
     }
-
-    /* ตัวอักษรสีสันต่างๆ */
     .gold-text { color: #ffd700; font-weight: bold; }
     .cyan-text { color: #00f3ff; font-weight: bold; }
     .purple-text { color: #b000ff; font-weight: bold; }
@@ -51,7 +45,6 @@ st.markdown("""
     .green-text { color: #00ff66; font-weight: bold; }
     .blue-text { color: #1a73e8; font-weight: bold; }
     
-    /* ปรับแต่งปุ่มกด */
     .stButton>button {
         background: linear-gradient(45deg, #ff3366, #b000ff);
         color: white;
@@ -59,17 +52,12 @@ st.markdown("""
         border-radius: 8px;
         font-weight: bold;
         width: 100%;
-        transition: 0.3s;
-    }
-    .stButton>button:hover {
-        box-shadow: 0 0 15px #00f3ff;
-        color: #ffd700;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 2. ฟังก์ชันคำนวณทางดาราศาสตร์ โหราศาสตร์ และปฏิทิน
+# 2. ข้อมูลโหราศาสตร์และฟังก์ชันคำนวณปรับปรุงใหม่
 # ---------------------------------------------------------
 
 DAYS_TH = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"]
@@ -113,23 +101,31 @@ def get_zodiac_animal(year_ce):
     index = (year_ce - 4) % 12
     return ZODIAC_ANIMALS[index]
 
-def calculate_moon_phase(year, month, day):
-    diff_years = year - 2000
-    day_count = diff_years * 365.25 + (month - 1) * 30.6 + day
-    moon_age = (day_count - 6.5) % 29.530588
+def calculate_moon_phase_adjusted(year, month, day):
+    """คำนวณเฟสดวงจันทร์ ปรับจูนให้ใกล้เคียงกับจันทรคติไทย"""
+    # อ้างอิงจุด New Moon
+    ref_date = datetime.date(2000, 1, 6)
+    target_d = datetime.date(year, month, day)
+    diff_days = (target_d - ref_date).days
+    
+    # รอบดวงจันทร์ 29.530588 วัน
+    moon_age = (diff_days) % 29.530588
     if moon_age < 0:
         moon_age += 29.530588
         
     illumination = (1 - math.cos(math.pi * 2 * moon_age / 29.530588)) / 2 * 100
     
-    if moon_age < 14.765:
-        phase_name = "ข้างขึ้น (Waxing Moon)"
-        kham = int(math.ceil((moon_age / 14.765) * 15))
-        kham_str = f"ขึ้น {kham if kham > 0 else 1} ค่ำ"
+    # คำนวณค่ำ (1-15 ค่ำ)
+    if moon_age <= 14.765:
+        phase_name = "ข้างขึ้น"
+        kham_num = int(math.floor((moon_age / 14.765) * 15)) + 1
+        if kham_num > 15: kham_num = 15
+        kham_str = f"ขึ้น {kham_num} ค่ำ"
     else:
-        phase_name = "ข้างแรม (Waning Moon)"
-        kham = int(math.ceil(((moon_age - 14.765) / 14.765) * 15))
-        kham_str = f"แรม {kham if kham > 0 else 1} ค่ำ"
+        phase_name = "ข้างแรม"
+        kham_num = int(math.floor(((moon_age - 14.765) / 14.765) * 15)) + 1
+        if kham_num > 15: kham_num = 15
+        kham_str = f"แรม {kham_num} ค่ำ"
         
     return kham_str, phase_name, round(illumination, 1)
 
@@ -161,7 +157,7 @@ with head_col2:
 st.markdown("---")
 
 # ---------------------------------------------------------
-# 4. ส่วนรับข้อมูล (Inputs - ย้อนหลังได้ตั้งแต่ 1950)
+# 4. ส่วนรับข้อมูล
 # ---------------------------------------------------------
 with st.container():
     st.markdown("### 📅 ระบุวัน เดือน ปี ที่ต้องการคำนวณ")
@@ -170,14 +166,14 @@ with st.container():
     today_now = datetime.date.today()
     
     with col_d:
-        selected_day = st.number_input("วัน (1-31)", min_value=1, max_value=31, value=today_now.day)
+        selected_day = st.number_input("วัน (1-31)", min_value=1, max_value=31, value=15)
         
     with col_m:
-        selected_month_str = st.selectbox("เดือน", options=[f"{i} : {MONTHS_TH[i-1]}" for i in range(1, 13)], index=today_now.month-1)
+        selected_month_str = st.selectbox("เดือน", options=[f"{i} : {MONTHS_TH[i-1]}" for i in range(1, 13)], index=0)
         selected_month = int(selected_month_str.split(":")[0])
         
     with col_y:
-        selected_year = st.number_input("ปี (ค.ศ. ตั้งแต่ 1950)", min_value=1950, max_value=2100, value=today_now.year)
+        selected_year = st.number_input("ปี (ค.ศ. ตั้งแต่ 1950)", min_value=1950, max_value=2100, value=1995)
 
 # ---------------------------------------------------------
 # 5. ประมวลผลข้อมูล
@@ -195,26 +191,27 @@ if date_valid:
     month_name = MONTHS_TH[selected_month - 1]
     year_be = selected_year + 543
     
-    kham, phase_name, illumination = calculate_moon_phase(selected_year, selected_month, selected_day)
+    kham, phase_name, illumination = calculate_moon_phase_adjusted(selected_year, selected_month, selected_day)
     zodiac_animal = get_zodiac_animal(selected_year)
     zodiac_sign = get_zodiac(selected_day, selected_month)
     
     day_of_year = target_date.timetuple().tm_yday
     sunrise, sunset = get_sun_info(day_of_year)
     
+    # คำนวณจำนวนวันจากวันนั้นจนถึงปัจจุบัน (วันนี้)
     delta_days = (today_now - target_date).days
     if delta_days > 0:
-        time_diff_str = f"ผ่านมาแล้ว {delta_days:,} วัน"
+        time_diff_str = f"นับจากวันนั้นถึงวันนี้ (ปัจจุบัน {today_now.strftime('%d/%m/%Y')}) ผ่านมาแล้ว {delta_days:,} วัน"
     elif delta_days < 0:
-        time_diff_str = f"อีก {abs(delta_days):,} วัน จะถึงวันดังกล่าว"
+        time_diff_str = f"นับจากวันนี้ถึงวันดังกล่าว เหลืออีก {abs(delta_days):,} วัน"
     else:
-        time_diff_str = "คือ วันนี้ปัจจุบัน!"
+        time_diff_str = "คือ วันนี้ปัจจุบันพอดี!"
 
     lucky_col = LUCKY_COLORS[(selected_day + selected_month) % len(LUCKY_COLORS)]
     lucky_num = (selected_day * selected_month) % 99 + 1
 
     # ---------------------------------------------------------
-    # 6. แสดงผลลัพธ์ (แบ่งเป็น 2 คอลัมน์)
+    # 6. แสดงผลลัพธ์
     # ---------------------------------------------------------
     res_col1, res_col2 = st.columns([1.2, 1])
 
@@ -227,28 +224,29 @@ if date_valid:
             <p><span class="cyan-text">[4] ข้างขึ้นข้างแรม:</span> <span class="gold-text">{kham}</span> ({phase_name})</p>
             <p><span class="cyan-text">[5] ปีนักษัตร:</span> <span class="purple-text">ปี{zodiac_animal}</span></p>
             <p><span class="cyan-text">[6] ราศี:</span> <span class="red-text">ราศี{zodiac_sign}</span></p>
-            <p><span class="cyan-text">[7] ค่าดวงจันทร์:</span> <span class="green-text">ความสว่าง {illumination}%</span></p>
+            <p><span class="cyan-text">[7] ค่าดวงจันทร์:</span> <span class="green-text">ความสว่างส่องสว่าง {illumination}%</span></p>
             <p><span class="cyan-text">[8] ค่าดวงอาทิตย์:</span> <span class="gold-text">ขึ้น ~{sunrise} | ตก ~{sunset}</span></p>
             <p><span class="cyan-text">[9] พิกัดอ้างอิง:</span> <span class="blue-text">Lat 13.7563° N | Lon 100.5018° E (กทม.)</span></p>
-            <p><span class="cyan-text">[10] การคำนวณวัน:</span> <span class="red-text">{time_diff_str}</span></p>
+            <p><span class="cyan-text">[10] จำนวนวันที่ผ่านมา:</span> <br><span class="red-text" style="font-size: 1.1em;">{time_diff_str}</span></p>
             <hr style="border-color: #b000ff;">
-            <h4 class="purple-text">🔮 พลังชะตาประจำวัน (Special Feature)</h4>
+            <h4 class="purple-text">🔮 พลังชะตาประจำวัน</h4>
             <p>• สีมงคลเสริมพลัง: <span class="green-text">{lucky_col}</span></p>
             <p>• เลขนำโชคประจำวัน: <span class="gold-text">{lucky_num}</span></p>
         </div>
         """, unsafe_allow_html=True)
 
     with res_col2:
-        # [12] คำนวณหาวันที่ตรงกัน ย้อนหลัง 50 ปี / ล่วงหน้า 50 ปี
+        # [12] คำนวณหาวันที่ตรงกันย้อนหลัง/ล่วงหน้า 50 ปี (ปรับระบบค้นหาใหม่ให้เจอแน่นอน)
         st.markdown("""
         <div class="neon-card-purple">
-            <h4 class="gold-text">🔄 ปีที่มีวัน-ราศี-นักษัตร ตรงกัน (+/- 50 ปี)</h4>
+            <h4 class="gold-text">🔄 ปีที่วันที่ {day} {month} ตรงกับ "วัน{day_name}" (+/- 50 ปี)</h4>
         </div>
-        """, unsafe_allow_html=True)
+        """.format(day=selected_day, month=month_name, day_name=day_name), unsafe_allow_html=True)
 
         start_y = max(1950, selected_year - 50)
         end_y = selected_year + 50
         matching_years = []
+        matching_years_exact = []
 
         for y in range(start_y, end_y + 1):
             if y == selected_year:
@@ -256,19 +254,28 @@ if date_valid:
             try:
                 chk_date = datetime.date(y, selected_month, selected_day)
                 chk_animal = get_zodiac_animal(y)
-                if chk_date.weekday() == weekday_num and chk_animal == zodiac_animal:
-                    matching_years.append(f"พ.ศ. {y+543} (ค.ศ. {y}) - วัน{DAYS_TH[weekday_num]}")
+                # เช็คเฉพาะวันในสัปดาห์ (จันทร์-อาทิตย์) ที่ตรงกัน
+                if chk_date.weekday() == weekday_num:
+                    be_year = y + 543
+                    txt = f"พ.ศ. {be_year} (ค.ศ. {y}) - ตรงกับวัน{DAYS_TH[weekday_num]}"
+                    if chk_animal == zodiac_animal:
+                        txt += f" 🌟 [ตรงนักษัตรปี{zodiac_animal}ด้วย]"
+                        matching_years_exact.append(txt)
+                    else:
+                        matching_years.append(txt)
             except ValueError:
                 continue
 
-        if matching_years:
-            st.success(f"พบ {len(matching_years)} ปีที่ตรงกันเป๊ะ:")
-            st.write(matching_years)
+        all_matches = matching_years_exact + matching_years
+        if all_matches:
+            st.success(f"พบ {len(all_matches)} ปีในช่วง +/- 50 ปี ที่วันที่ {selected_day} {month_name} ตรงกับวัน{day_name}:")
+            for item in all_matches:
+                st.write(f"• {item}")
         else:
-            st.info("ไม่พบปีที่มีเงื่อนไขตรงกันในช่วง +/- 50 ปี")
+            st.info("ไม่พบปีที่ตรงกันในช่วงเวลาดังกล่าว")
 
         # ---------------------------------------------------------
-        # 7. เครื่องเล่นเพลง (Music Player Component)
+        # 7. เครื่องเล่นเพลง
         # ---------------------------------------------------------
         st.markdown("---")
         st.markdown("### 🎵 เครื่องเล่นเพลง (Music Player)")
