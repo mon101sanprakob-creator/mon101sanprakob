@@ -33,8 +33,7 @@ st.markdown("""
         border-radius: 12px;
         padding: 20px;
         margin-bottom: 15px;
-    }
-
+ Image
     .neon-card-purple {
         background-color: #141419;
         border: 1px solid #b000ff;
