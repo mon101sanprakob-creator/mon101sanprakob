@@ -12,4 +12,6 @@ plotly
 Pillow
 plotly
 matplotlib
-moviepy.editor
+streamlit
+moviepy==1.0.3
+pillow
