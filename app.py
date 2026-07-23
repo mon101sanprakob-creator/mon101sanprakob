@@ -1,13 +1,101 @@
 import streamlit as st
 import datetime
 import calendar
+import os
 
+# 1. ตั้งค่าหน้าเพจ
 st.set_page_config(page_title="Date Secrets & Astrology Engine", page_icon="🔮", layout="centered")
 
-st.title("🔮 แอปถอดรหัสดวงชะตา & คำนวณตำแหน่งดวงดาว")
-st.write("กรอกวันเดือนปี เพื่อถอดรหัสตำแหน่งดวงดาวทางโหราศาสตร์ เลขศาสตร์ และค้นหาวันที่มีค่าเหมือนกันย้อนหลัง-ล่วงหน้า 50 ปี")
+# 2. ปรับแต่ง CSS โทนสี ดำเงา + สีสไตล์ นีออน (แดง, น้ำเงิน, เขียว, ม่วง, ขาว, ทอง)
+st.markdown("""
+    <style>
+    /* พื้นหลังหลักดำเงา Glossy Dark */
+    .stApp {
+        background: linear-gradient(135deg, #0d0d11 0%, #050508 50%, #150a21 100%);
+        color: #ffffff;
+    }
+    
+    /* กล่องการ์ดมีเงา Glossy Glassmorphism */
+    div[data-testid="stVerticalBlock"] > div {
+        background: rgba(20, 20, 30, 0.6);
+        border-radius: 15px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 215, 0, 0.2);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+    }
 
-# 1. ส่วนรับอินพุตวันเดือนปี
+    /* หัวข้อสีทองนีออน (Neon Gold) */
+    h1 {
+        color: #FFD700 !important;
+        text-shadow: 0 0 10px #FFD700, 0 0 20px #FF8C00;
+        text-align: center;
+    }
+    
+    h2, h3 {
+        color: #00F0FF !important;
+        text-shadow: 0 0 8px #00F0FF;
+    }
+
+    /* ปุ่มกดสีม่วง-แดง นีออน */
+    .stButton > button {
+        background: linear-gradient(45deg, #FF0055, #7A00FF) !important;
+        color: #FFFFFF !important;
+        font-weight: bold !important;
+        border-radius: 12px !important;
+        border: none !important;
+        box-shadow: 0 0 15px #FF0055, 0 0 20px #7A00FF !important;
+        transition: all 0.3s ease !important;
+    }
+    .stButton > button:hover {
+        transform: scale(1.03);
+        box-shadow: 0 0 25px #00FF66, 0 0 30px #00F0FF !important;
+    }
+
+    /* ตารางและ Metric */
+    div[data-testid="stMetricValue"] {
+        color: #00FF66 !important;
+        text-shadow: 0 0 10px #00FF66;
+    }
+    
+    /* กรอบข้อความล้อมรอบสีเขียวนีออน */
+    .stAlert {
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 255, 102, 0.3);
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# ----------------- 3. แสดงโลโก้ logo1.png ----------------- #
+col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
+with col_logo2:
+    if os.path.exists("logo1.png"):
+        st.image("logo1.png", use_container_width=True)
+    else:
+        st.info("💡 (ใส่ไฟล์ logo1.png ในโฟลเดอร์เดียวกับ app.py เพื่อแสดงโลโก้)")
+
+st.title("🔮 แอปถอดรหัสดวงชะตา & เครื่องเล่นเพลง")
+st.write("<p style='text-align: center; color: #E0E0E0;'>วิเคราะห์ตำแหน่งดวงดาว จันทรคติ และตัวเลขมงคล</p>", unsafe_allow_html=True)
+
+# ----------------- 4. เครื่องเล่นเพลงจากโฟลเดอร์ ----------------- #
+st.markdown("---")
+st.subheader("🎵 เครื่องเล่นเพลงบรรยากาศ (Music Player)")
+
+# ค้นหาไฟล์เพลง .mp3 และ .wav ในโฟลเดอร์เดียวกัน
+music_files = [f for f in os.listdir('.') if f.endswith('.mp3') or f.endswith('.wav')]
+
+if music_files:
+    selected_song = st.selectbox("🎧 เลือกเพลงที่จะเปิดฟัง:", music_files)
+    if selected_song:
+        audio_file = open(selected_song, 'rb')
+        audio_bytes = audio_file.read()
+        st.audio(audio_bytes, format='audio/mp3')
+else:
+    st.caption("📁 ไม่พบไฟล์เพลง (.mp3 / .wav) ในโฟลเดอร์นี้ กรุณาอัปโหลดไฟล์เพลงลง GitHub เพิ่มเติมครับ")
+
+st.markdown("---")
+
+# ----------------- 5. ส่วนรับอินพุตวันเดือนปี ----------------- #
+st.subheader("🗓️ เลือกวัน/เดือน/ปี เพื่อถอดรหัส")
 col1, col2, col3 = st.columns(3)
 with col1:
     day = st.number_input("วัน (Day)", min_value=1, max_value=31, value=datetime.date.today().day)
@@ -17,15 +105,19 @@ with col3:
     year = st.number_input("ปี ค.ศ. (Year)", min_value=1900, max_value=2100, value=datetime.date.today().year)
 
 # ----------------- ฟังก์ชันคำนวณตำแหน่งดวงดาว & โหราศาสตร์ ----------------- #
-
 ZODIAC_NAMES = [
     "ราศีเมษ ♈", "ราศีพฤษภ ♉", "ราศีเมถุน ♊", "ราศีกรกฎ ♋",
     "ราศีสิงห์ ♌", "ราศีกันย์ ♍", "ราศีตุลย์ ♎", "ราศีพิจิก ♏",
     "ราศีธนู ♐", "ราศีมังกร ♑", "ราศีกุมภ์ ♒", "ราศีมีน ♓"
 ]
 
+def get_exact_day_name(target_date):
+    day_names = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"]
+    day_powers = [15, 8, 17, 19, 21, 12, 6]
+    idx = target_date.weekday()
+    return day_names[idx], day_powers[idx]
+
 def get_zodiac(d, m):
-    """ราศีตามอาทิตย์ยก (Sun Sign)"""
     zodiacs = [
         (1, 20, "มังกร ♑"), (2, 19, "กุมภ์ ♒"), (3, 21, "มีน ♓"),
         (4, 20, "เมษ ♈"), (5, 21, "พฤษภ ♉"), (6, 21, "เมถุน ♊"),
@@ -39,16 +131,26 @@ def get_zodiac(d, m):
     return "มังกร ♑"
 
 def get_zodiac_animal(y):
-    """ปีนักษัตร"""
     animals = ["วอก (ลิง)", "ระกา (ไก่)", "จอ (หมา)", "กุน (หมู)", "ชวด (หนู)", "ฉลู (วัว)",
                "ขาล (เสือ)", "เถาะ (กระต่าย)", "มะโรง (งูใหญ่)", "มะเส็ง (งูเล็ก)", "มะเมีย (ม้า)", "มะเมีย (แพะ)"]
     return animals[y % 12]
 
-def calculate_planetary_positions(target_date):
-    """คำนวณตำแหน่งดวงดาวหลักทางโหราศาสตร์แบบประมาณการตามสมการดาราศาสตร์"""
-    days_since_2000 = (target_date - datetime.date(2000, 1, 1)).days
+def get_exact_moon_phase(target_date):
+    ref_date = datetime.datetime(1980, 4, 16, 12, 46)
+    target_datetime = datetime.datetime(target_date.year, target_date.month, target_date.day, 12, 0)
+    diff_days = (target_datetime - ref_date).total_seconds() / 86400.0
+    synodic_month = 29.53058867
+    cycle_pos = (diff_days % synodic_month)
+    age_in_days = int(cycle_pos)
+    illumination = int((1 - abs((cycle_pos / synodic_month) - 0.5) * 2) * 100)
     
-    # รอบการโคจรของดาวแต่ละดวง (จำนวนวันต่อ 1 รอบวงกว้าง)
+    if age_in_days < 15:
+        return f"ขึ้น {age_in_days + 1} ค่ำ 🌓 (ดวงจันทร์สว่างประมาณ {illumination}%)"
+    else:
+        return f"แรม {age_in_days - 14} ค่ำ 🌗 (ดวงจันทร์สว่างประมาณ {illumination}%)"
+
+def calculate_planetary_positions(target_date):
+    days_since_2000 = (target_date - datetime.date(2000, 1, 1)).days
     sun_pos = int(((days_since_2000 % 365.25) / 365.25) * 12)
     moon_pos = int(((days_since_2000 % 27.32) / 27.32) * 12)
     mercury_pos = int(((days_since_2000 % 87.97) / 87.97) * 12)
@@ -58,26 +160,15 @@ def calculate_planetary_positions(target_date):
     saturn_pos = int(((days_since_2000 % 10759.22) / 10759.22) * 12)
     
     planets = [
-        {"ดาว": "☀️ ดาวอาทิตย์ (1)", "ตำแหน่ง": ZODIAC_NAMES[sun_pos], "ความหมาย": "ตัวตน พลังชีวิต และความมุ่งมั่น"},
-        {"ดาว": "🌙 ดาวจันทร์ (2)", "ตำแหน่ง": ZODIAC_NAMES[moon_pos], "ความหมาย": "อารมณ์ จิตใต้สำนึก และความรู้สึก"},
-        {"ดาว": "☿ ดาวพุธ (4)", "ตำแหน่ง": ZODIAC_NAMES[mercury_pos], "ความหมาย": "การสื่อสาร สติปัญญา และเจรจา"},
-        {"ดาว": "♀ ดาวศุกร์ (6)", "ตำแหน่ง": ZODIAC_NAMES[venus_pos], "ความหมาย": "ความรัก เสน่ห์ และโชคลาภเงินทอง"},
-        {"ดาว": "♂ ดาวอังคาร (3)", "ตำแหน่ง": ZODIAC_NAMES[mars_pos], "ความหมาย": "ความขยัน กล้าหาญ และพลังการต่อสู้"},
-        {"ดาว": "♃ ดาวพฤหัสบดี (5)", "ตำแหน่ง": ZODIAC_NAMES[jupiter_pos], "ความหมาย": "ผู้ใหญ่เมตตา คุณธรรม และความสำเร็จ"},
-        {"ดาว": "♄ ดาวเสาร์ (7)", "ตำแหน่ง": ZODIAC_NAMES[saturn_pos], "ความหมาย": "ความอดทน บทเรียนชีวิต และความมั่นคง"}
+        {"ดาวเคราะห์": "☀️ ดาวอาทิตย์ (1)", "สถิตราศี": ZODIAC_NAMES[sun_pos], "ความหมาย": "ตัวตน พลังชีวิต และความมุ่งมั่น"},
+        {"ดาวเคราะห์": "🌙 ดาวจันทร์ (2)", "สถิตราศี": ZODIAC_NAMES[moon_pos], "ความหมาย": "อารมณ์ จิตใต้สำนึก และความรู้สึก"},
+        {"ดาวเคราะห์": "☿ ดาวพุธ (4)", "สถิตราศี": ZODIAC_NAMES[mercury_pos], "ความหมาย": "การสื่อสาร สติปัญญา และเจรจา"},
+        {"ดาวเคราะห์": "♀ ดาวศุกร์ (6)", "สถิตราศี": ZODIAC_NAMES[venus_pos], "ความหมาย": "ความรัก เสน่ห์ และโชคลาภเงินทอง"},
+        {"ดาวเคราะห์": "♂ ดาวอังคาร (3)", "สถิตราศี": ZODIAC_NAMES[mars_pos], "ความหมาย": "ความขยัน กล้าหาญ และพลังการต่อสู้"},
+        {"ดาวเคราะห์": "♃ ดาวพฤหัสบดี (5)", "สถิตราศี": ZODIAC_NAMES[jupiter_pos], "ความหมาย": "ผู้ใหญ่เมตตา คุณธรรม และความสำเร็จ"},
+        {"ดาวเคราะห์": "♄ ดาวเสาร์ (7)", "สถิตราศี": ZODIAC_NAMES[saturn_pos], "ความหมาย": "ความอดทน บทเรียนชีวิต และความมั่นคง"}
     ]
     return planets
-
-def get_moon_phase(target_date):
-    diff = (target_date - datetime.date(2000, 1, 6)).days
-    lunar_cycle = 29.53058867
-    phase = (diff % lunar_cycle) / lunar_cycle
-    day_in_cycle = int(phase * 29.53)
-    
-    if day_in_cycle < 15:
-        return f"ขึ้น {day_in_cycle + 1} ค่ำ 🌓 (สว่าง {int(phase*200)}%)"
-    else:
-        return f"แรม {day_in_cycle - 14} ค่ำ 🌗 (สว่าง {int((1-phase)*200)}%)"
 
 def calculate_life_path(d, m, y):
     digits = f"{d}{m}{y}"
@@ -86,21 +177,16 @@ def calculate_life_path(d, m, y):
         total = sum(int(digit) for digit in str(total))
     return total
 
-def get_day_power(weekday_index):
-    powers = [15, 8, 17, 19, 21, 12, 6]
-    day_names = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"]
-    return day_names[weekday_index], powers[weekday_index]
+# ----------------- เริ่มประมวลผล ----------------- #
 
-# ----------------- เริ่มการประมวลผล ----------------- #
-
-if st.button("🔮 ถอดรหัสผูกดวง & คำนวณตำแหน่งดวงดาว"):
+if st.button("🚀 ถอดรหัสผูกดวง & คำนวณตำแหน่งดวงดาว"):
     try:
         target_date = datetime.date(year, month, day)
-        day_name, day_power = get_day_power(target_date.weekday())
+        day_name, day_power = get_exact_day_name(target_date)
         year_th = year + 543
         zodiac = get_zodiac(day, month)
         zodiac_animal = get_zodiac_animal(year)
-        moon_phase = get_moon_phase(target_date)
+        moon_phase = get_exact_moon_phase(target_date)
         life_path = calculate_life_path(day, month, year)
         planet_data = calculate_planetary_positions(target_date)
 
@@ -108,27 +194,21 @@ if st.button("🔮 ถอดรหัสผูกดวง & คำนวณต�
         st.header(f"✨ แผ่นผูกดวงชะตา: {day} / {month} / {year} (พ.ศ. {year_th})")
         st.subheader(f"🗓️ เจ้าชะตากำเนิด: **วัน{day_name}** | ปี{zodiac_animal}")
 
-        # กล่องสรุปค่าหลัก
         c1, c2, c3 = st.columns(3)
         with c1:
             st.metric("ราศีประจำตัว", zodiac)
         with c2:
             st.metric("เลขกำลังวัน", day_power)
         with c3:
-            st.metric("เลขชะตาลิขิต (Life Path)", life_path)
+            st.metric("เลขชะตาลิขิต", life_path)
 
         st.info(f"🌙 **สภาวะดวงจันทร์ (ข้างขึ้น/ข้างแรม):** {moon_phase}")
 
         st.markdown("---")
-        st.subheader("🪐 ตารางตำแหน่งดวงดาวประทับราศี (Astro Planetary Map)")
-        st.write("ตำแหน่งของดาวเคราะห์สำคัญในสถิตราศีขณะนั้น:")
-        
-        # แสดงตารางตำแหน่งดาว
+        st.subheader("🪐 ตารางตำแหน่งดวงดาวประทับราศี")
         st.dataframe(planet_data, use_container_width=True)
 
         st.markdown("---")
-        
-        # ----------------- ค้นหาวันที่มีค่าดวงดาวตรงกัน 100 ปี ----------------- #
         st.subheader("🎯 ค้นหาวันที่มีโครงสร้างดวงชะตาตรงกันเป๊ะ (ย้อนหลัง 50 ปี - ล่วงหน้า 50 ปี)")
         
         start_year = year - 50
