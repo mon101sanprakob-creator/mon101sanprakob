@@ -3,10 +3,14 @@ import datetime
 import calendar
 import os
 
-# 1. ตั้งค่าหน้าเพจ
-st.set_page_config(page_title="Date Secrets & Astrology Engine", page_icon="🔮", layout="centered")
+# 1. ตั้งค่าหน้าเพจ Streamlit
+st.set_page_config(
+    page_title="Date Secrets & Astrology Engine", 
+    page_icon="🔮", 
+    layout="centered"
+)
 
-# 2. ปรับแต่ง CSS โทนสี ดำเงา + สีสไตล์ นีออน (แดง, น้ำเงิน, เขียว, ม่วง, ขาว, ทอง)
+# 2. ปรับแต่ง CSS โทนสี ดำเงา (Glossy Dark) + สีสไตล์ นีออน (แดง, น้ำเงิน, เขียว, ม่วง, ขาว, ทอง)
 st.markdown("""
     <style>
     /* พื้นหลังหลักดำเงา Glossy Dark */
@@ -104,7 +108,7 @@ with col2:
 with col3:
     year = st.number_input("ปี ค.ศ. (Year)", min_value=1900, max_value=2100, value=datetime.date.today().year)
 
-# ----------------- ฟังก์ชันคำนวณตำแหน่งดวงดาว & โหราศาสตร์ ----------------- #
+# ----------------- 6. ฟังก์ชันคำนวณและโหราศาสตร์ ----------------- #
 ZODIAC_NAMES = [
     "ราศีเมษ ♈", "ราศีพฤษภ ♉", "ราศีเมถุน ♊", "ราศีกรกฎ ♋",
     "ราศีสิงห์ ♌", "ราศีกันย์ ♍", "ราศีตุลย์ ♎", "ราศีพิจิก ♏",
@@ -112,12 +116,14 @@ ZODIAC_NAMES = [
 ]
 
 def get_exact_day_name(target_date):
+    """คำนวณวันในสัปดาห์แม่นยำตามมาตรฐานสากล + เลขกำลังวัน"""
     day_names = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"]
     day_powers = [15, 8, 17, 19, 21, 12, 6]
     idx = target_date.weekday()
     return day_names[idx], day_powers[idx]
 
 def get_zodiac(d, m):
+    """คำนวณราศีประจำวันเกิด"""
     zodiacs = [
         (1, 20, "มังกร ♑"), (2, 19, "กุมภ์ ♒"), (3, 21, "มีน ♓"),
         (4, 20, "เมษ ♈"), (5, 21, "พฤษภ ♉"), (6, 21, "เมถุน ♊"),
@@ -131,26 +137,37 @@ def get_zodiac(d, m):
     return "มังกร ♑"
 
 def get_zodiac_animal(y):
+    """คำนวณปีนักษัตร"""
     animals = ["วอก (ลิง)", "ระกา (ไก่)", "จอ (หมา)", "กุน (หมู)", "ชวด (หนู)", "ฉลู (วัว)",
                "ขาล (เสือ)", "เถาะ (กระต่าย)", "มะโรง (งูใหญ่)", "มะเส็ง (งูเล็ก)", "มะเมีย (ม้า)", "มะเมีย (แพะ)"]
     return animals[y % 12]
 
 def get_exact_moon_phase(target_date):
-    ref_date = datetime.datetime(1980, 4, 16, 12, 46)
+    """คำนวณข้างขึ้น/ข้างแรมอ้างอิงฐานจันทรคติไทย"""
+    ref_date = datetime.datetime(1980, 4, 15, 12, 0)
     target_datetime = datetime.datetime(target_date.year, target_date.month, target_date.day, 12, 0)
+    
     diff_days = (target_datetime - ref_date).total_seconds() / 86400.0
     synodic_month = 29.53058867
+    
     cycle_pos = (diff_days % synodic_month)
     age_in_days = int(cycle_pos)
+    
     illumination = int((1 - abs((cycle_pos / synodic_month) - 0.5) * 2) * 100)
     
     if age_in_days < 15:
-        return f"ขึ้น {age_in_days + 1} ค่ำ 🌓 (ดวงจันทร์สว่างประมาณ {illumination}%)"
+        kham = age_in_days + 1
+        return f"ขึ้น {kham} ค่ำ 🌓 (ดวงจันทร์สว่างประมาณ {illumination}%)"
     else:
-        return f"แรม {age_in_days - 14} ค่ำ 🌗 (ดวงจันทร์สว่างประมาณ {illumination}%)"
+        kham = age_in_days - 14
+        if kham > 15:
+            kham = 15
+        return f"แรม {kham} ค่ำ 🌗 (ดวงจันทร์สว่างประมาณ {illumination}%)"
 
 def calculate_planetary_positions(target_date):
+    """คำนวณตำแหน่งดวงดาว + มิติความหมาย ธาตุ ภพภูมิ อัญมณี และคำทำนาย"""
     days_since_2000 = (target_date - datetime.date(2000, 1, 1)).days
+    
     sun_pos = int(((days_since_2000 % 365.25) / 365.25) * 12)
     moon_pos = int(((days_since_2000 % 27.32) / 27.32) * 12)
     mercury_pos = int(((days_since_2000 % 87.97) / 87.97) * 12)
@@ -159,25 +176,80 @@ def calculate_planetary_positions(target_date):
     jupiter_pos = int(((days_since_2000 % 4332.59) / 4332.59) * 12)
     saturn_pos = int(((days_since_2000 % 10759.22) / 10759.22) * 12)
     
+    elements = ["🔥 ธาตุไฟ", "🌍 ธาตุดิน", "🌬️ ธาตุลม", "💧 ธาตุน้ำ"] * 3
+    houses = ["ตนุ (ตัวตน)", "กุมภะ (ทรัพย์สิน)", "สหัชชะ (เพื่อนฝูง)", "พันธุ (ครอบครัว)", 
+              "ปุตตะ (บริวาร/โชค)", "อริ (อุปสรรค)", "ปัตนิ (คู่ครอง)", "มรณะ (การเปลี่ยนแปลง)", 
+              "ศุภะ (ความเจริญ)", "กัมมะ (การงาน)", "ลาภะ (โชคลาภ)", "วินาศ (เรื่องเร้นลับ)"]
+
     planets = [
-        {"ดาวเคราะห์": "☀️ ดาวอาทิตย์ (1)", "สถิตราศี": ZODIAC_NAMES[sun_pos], "ความหมาย": "ตัวตน พลังชีวิต และความมุ่งมั่น"},
-        {"ดาวเคราะห์": "🌙 ดาวจันทร์ (2)", "สถิตราศี": ZODIAC_NAMES[moon_pos], "ความหมาย": "อารมณ์ จิตใต้สำนึก และความรู้สึก"},
-        {"ดาวเคราะห์": "☿ ดาวพุธ (4)", "สถิตราศี": ZODIAC_NAMES[mercury_pos], "ความหมาย": "การสื่อสาร สติปัญญา และเจรจา"},
-        {"ดาวเคราะห์": "♀ ดาวศุกร์ (6)", "สถิตราศี": ZODIAC_NAMES[venus_pos], "ความหมาย": "ความรัก เสน่ห์ และโชคลาภเงินทอง"},
-        {"ดาวเคราะห์": "♂ ดาวอังคาร (3)", "สถิตราศี": ZODIAC_NAMES[mars_pos], "ความหมาย": "ความขยัน กล้าหาญ และพลังการต่อสู้"},
-        {"ดาวเคราะห์": "♃ ดาวพฤหัสบดี (5)", "สถิตราศี": ZODIAC_NAMES[jupiter_pos], "ความหมาย": "ผู้ใหญ่เมตตา คุณธรรม และความสำเร็จ"},
-        {"ดาวเคราะห์": "♄ ดาวเสาร์ (7)", "สถิตราศี": ZODIAC_NAMES[saturn_pos], "ความหมาย": "ความอดทน บทเรียนชีวิต และความมั่นคง"}
+        {
+            "ดวงดาว": "☀️ ดาวอาทิตย์ (1)",
+            "สถิตราศี": ZODIAC_NAMES[sun_pos],
+            "ธาตุประจำราศี": elements[sun_pos],
+            "ส่งผลต่อเรื่อง": houses[sun_pos],
+            "อัญมณีเสริมดวง": "ทับทิม / แดง",
+            "คำทำนายเชิงลึก": "ส่งผลต่อวาสนา ความเป็นผู้นำ และศักดิ์ศรีในสังคม"
+        },
+        {
+            "ดวงดาว": "🌙 ดาวจันทร์ (2)",
+            "สถิตราศี": ZODIAC_NAMES[moon_pos],
+            "ธาตุประจำราศี": elements[moon_pos],
+            "ส่งผลต่อเรื่อง": houses[moon_pos],
+            "อัญมณีเสริมดวง": "ไข่มุก / ขาว, เหลืองนวล",
+            "คำทำนายเชิงลึก": "ส่งผลต่อจิตใจ เสน่ห์ ความอ่อนโยน และจินตนาการ"
+        },
+        {
+            "ดวงดาว": "☿ ดาวพุธ (4)",
+            "สถิตราศี": ZODIAC_NAMES[mercury_pos],
+            "ธาตุประจำราศี": elements[mercury_pos],
+            "ส่งผลต่อเรื่อง": houses[mercury_pos],
+            "อัญมณีเสริมดวง": "มรกต / เขียว",
+            "คำทำนายเชิงลึก": "ส่งผลต่อวาทศิลป์ การเจรจาค้าขาย และสติปัญญา"
+        },
+        {
+            "ดวงดาว": "♀ ดาวศุกร์ (6)",
+            "สถิตราศี": ZODIAC_NAMES[venus_pos],
+            "ธาตุประจำราศี": elements[venus_pos],
+            "ส่งผลต่อเรื่อง": houses[venus_pos],
+            "อัญมณีเสริมดวง": "ไพลิน / ฟ้า, น้ำเงิน",
+            "คำทำนายเชิงลึก": "ส่งผลต่อความรัก ศิลปะ ความสุข และโชคด้านการเงิน"
+        },
+        {
+            "ดวงดาว": "♂ ดาวอังคาร (3)",
+            "สถิตราศี": ZODIAC_NAMES[mars_pos],
+            "ธาตุประจำราศี": elements[mars_pos],
+            "ส่งผลต่อเรื่อง": houses[mars_pos],
+            "อัญมณีเสริมดวง": "โกเมน / ชมพู, แดงเข้ม",
+            "คำทำนายเชิงลึก": "ส่งผลต่อความกล้าหาญ ขยันอดทน การต่อสู้และกำลังกาย"
+        },
+        {
+            "ดวงดาว": "♃ ดาวพฤหัสบดี (5)",
+            "สถิตราศี": ZODIAC_NAMES[jupiter_pos],
+            "ธาตุประจำราศี": elements[jupiter_pos],
+            "ส่งผลต่อเรื่อง": houses[jupiter_pos],
+            "อัญมณีเสริมดวง": "บุษราคัม / ส้ม, ทอง",
+            "คำทำนายเชิงลึก": "ส่งผลต่อผู้ใหญ่เมตตา ความรู้ คุณธรรม และโชคใหญ่"
+        },
+        {
+            "ดวงดาว": "♄ ดาวเสาร์ (7)",
+            "สถิตราศี": ZODIAC_NAMES[saturn_pos],
+            "ธาตุประจำราศี": elements[saturn_pos],
+            "ส่งผลต่อเรื่อง": houses[saturn_pos],
+            "อัญมณีเสริมดวง": "นิลดำ / ดำ, ม่วง",
+            "คำทำนายเชิงลึก": "ส่งผลต่อความอุตสาหะ การวางแผนระยะยาว และความมั่นคง"
+        }
     ]
     return planets
 
 def calculate_life_path(d, m, y):
+    """คำนวณเลขศาสตร์รวมชะตา (Life Path Number)"""
     digits = f"{d}{m}{y}"
     total = sum(int(digit) for digit in digits)
     while total > 9 and total not in [11, 22, 33]:
         total = sum(int(digit) for digit in str(total))
     return total
 
-# ----------------- เริ่มประมวลผล ----------------- #
+# ----------------- 7. ปุ่มเริ่มคำนวณและประมวลผล ----------------- #
 
 if st.button("🚀 ถอดรหัสผูกดวง & คำนวณตำแหน่งดวงดาว"):
     try:
@@ -194,6 +266,7 @@ if st.button("🚀 ถอดรหัสผูกดวง & คำนวณต�
         st.header(f"✨ แผ่นผูกดวงชะตา: {day} / {month} / {year} (พ.ศ. {year_th})")
         st.subheader(f"🗓️ เจ้าชะตากำเนิด: **วัน{day_name}** | ปี{zodiac_animal}")
 
+        # กล่องแสดงผลหลัก
         c1, c2, c3 = st.columns(3)
         with c1:
             st.metric("ราศีประจำตัว", zodiac)
@@ -205,7 +278,7 @@ if st.button("🚀 ถอดรหัสผูกดวง & คำนวณต�
         st.info(f"🌙 **สภาวะดวงจันทร์ (ข้างขึ้น/ข้างแรม):** {moon_phase}")
 
         st.markdown("---")
-        st.subheader("🪐 ตารางตำแหน่งดวงดาวประทับราศี")
+        st.subheader("🪐 ตารางตำแหน่งดวงดาวประทับราศี & มิติความหมาย")
         st.dataframe(planet_data, use_container_width=True)
 
         st.markdown("---")
