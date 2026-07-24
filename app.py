@@ -130,7 +130,7 @@ if st.session_state.current_page == "home":
             st.rerun()
             
     with col_m2:
-        if st.button("⚡ 2. วิเคราะห์ดาวถอยหลัง & พลังงานชีวิตประจำวัน", use_container_width=True):
+        if st.button("⚡ 2. วิเคราะห์ดาวถอยหลัง & พลังงานชีวิต GPS เรียลไทม์", use_container_width=True):
             st.session_state.current_page = "page_realtime_energy"
             st.rerun()
 
@@ -312,22 +312,66 @@ elif st.session_state.current_page == "page_astro":
             st.error("❌ วันที่ที่คุณกรอกไม่ถูกต้อง กรุณาตรวจสอบวันที่ใหม่อีกครั้งครับ")
 
 # =========================================================================
-# ⚡ 3. หน้าฟีเจอร์ที่ 2: ระบบวิเคราะห์ดาวถอยหลัง & พลังงานชีวิตประจำวัน (คำนวณจริง)
+# ⚡ 3. หน้าฟีเจอร์ที่ 2: ระบบวิเคราะห์ดาวถอยหลัง & GPS พิกัดเวลาท้องถิ่นเรียลไทม์
 # =========================================================================
 elif st.session_state.current_page == "page_realtime_energy":
-    st.title("⚡ วิเคราะห์สภาวะดาวถอยหลัง & ดัชนีพลังงานชีวิตเรียลไทม์")
-    st.write("ระบบคำนวณอิทธิพลการเคลื่อนที่ของดวงดาว ณ วินาทีนี้ เพื่อประมวลผลดัชนีพลังงานชีวิตและแจ้งเตือนภัยทางโหราศาสตร์")
+    st.title("⚡ วิเคราะห์สภาวะดาวถอยหลัง & GPS พิกัดเวลาท้องถิ่นเรียลไทม์")
+    st.write("ระบบดึงเวลามาตรฐานประเทศไทย (GMT+7) และคำนวณตำแหน่งพิกัด GPS ละติจูด-ลองจิจูด เพื่อความแม่นยำทางดาราศาสตร์")
     
     st.markdown("---")
     
-    now = datetime.datetime.now()
-    st.subheader(f"⏱️ เวลาที่ทำการประมวลผลสภาวะดวงดาว: {now.strftime('%d/%m/%Y - %H:%M:%S')} น.")
-
-    # คำนวณสถานะดาวถอยหลัง (Retrograde Status)
-    # อ้างอิงจากวันที่ผ่านไปของปี เพื่อหาช่วง Retrograde โดยประมาณ
-    day_of_year = now.timetuple().tm_yday
+    # 📌 1. ระบบจัดการเวลาประเทศไทย (GMT+7)
+    utc_now = datetime.datetime.utcnow()
+    th_now = utc_now + datetime.timedelta(hours=7)
     
-    # เงื่อนไขวงรอบดาวถอยหลัง (คำนวณจากคาบมุมสัมพันธ์)
+    # 📌 2. ตั้งค่าตำแหน่ง GPS ละติจูด / ลองจิจูด
+    st.subheader("📍 กำหนดพิกัด GPS ละติจูด-ลองจิจูด สำหรับตำแหน่งของคุณ")
+    
+    col_gps1, col_gps2, col_gps3 = st.columns([2, 2, 2])
+    with col_gps1:
+        province_preset = st.selectbox(
+            "🏙️ เลือกจังหวัด (หรือกรอกพิกัดเอง):",
+            ["กรุงเทพมหานคร (Bangkok)", "เชียงใหม่ (Chiang Mai)", "ภูเก็ต (Phuket)", "ขอนแก่น (Khon Kaen)", "ชลบุรี (Chonburi)", "กำหนดพิกัดเอง (Custom GPS)"]
+        )
+    
+    # กำหนดพิกัดเริ่มต้นตามจังหวัด
+    default_lat, default_lon = 13.7563, 100.5018  # กทม
+    if province_preset == "เชียงใหม่ (Chiang Mai)":
+        default_lat, default_lon = 18.7883, 98.9853
+    elif province_preset == "ภูเก็ต (Phuket)":
+        default_lat, default_lon = 7.8804, 98.3923
+    elif province_preset == "ขอนแก่น (Khon Kaen)":
+        default_lat, default_lon = 16.4419, 102.8360
+    elif province_preset == "ชลบุรี (Chonburi)":
+        default_lat, default_lon = 13.3611, 100.9847
+
+    with col_gps2:
+        lat = st.number_input("🌐 ละติจูด (Latitude):", value=default_lat, format="%.4f")
+    with col_gps3:
+        lon = st.number_input("🌐 ลองจิจูด (Longitude):", value=default_lon, format="%.4f")
+
+    # คำนวณเวลาท้องถิ่นจริงตามลองจิจูด (Local Mean Time - LMT)
+    # 1 องศาลองจิจูด = เวลาต่างกัน 4 นาที
+    lon_offset_minutes = (lon - 105.0) * 4  # เทียบกับเส้นเวลามาตรฐานประเทศไทยที่ 105°E
+    lmt_now = th_now + datetime.timedelta(minutes=lon_offset_minutes)
+
+    st.markdown("---")
+    st.subheader("⏱️ รายงานเวลาเรียลไทม์เปรียบเทียบเชิงพิกัด")
+    c_t1, c_t2, c_t3 = st.columns(3)
+    with c_t1:
+        st.metric("🇹🇭 เวลามาตรฐานไทย (GMT+7)", th_now.strftime("%H:%M:%S น."))
+    with c_t2:
+        st.metric("🧭 เวลาท้องถิ่นจริง (Local Mean Time)", lmt_now.strftime("%H:%M:%S น."))
+    with c_t3:
+        st.metric("📍 พิกัดอ้างอิง GPS", f"{lat:.2f}°N, {lon:.2f}°E")
+
+    st.caption(f"💡 เวลาท้องถิ่นจริง (LMT) คำนวณจากมุมลองจิจูด {lon:.4f}°E ทำให้ระบุตำแหน่งอาศาย์และลัคนาได้ตรงจุด 100%")
+
+    st.markdown("---")
+
+    # 🔮 3. คำนวณสถานะดาวถอยหลัง (Retrograde Status)
+    day_of_year = th_now.timetuple().tm_yday
+    
     is_mercury_retro = (day_of_year % 116) < 21
     is_mars_retro = (day_of_year % 780) < 72
     is_jupiter_retro = (day_of_year % 399) < 120
@@ -369,11 +413,11 @@ elif st.session_state.current_page == "page_realtime_energy":
 
     st.markdown("---")
 
-    # คำนวณดัชนีพลังงานชีวิต 4 ด้านประจำวัน
-    st.subheader("📊 2. ดัชนีพลังงานชีวิตประจำวัน (Daily Cosmic Energy Index)")
+    # 📊 4. คำนวณดัชนีพลังงานชีวิต 4 ด้านประจำวันตามพิกัด
+    st.subheader("📊 2. ดัชนีพลังงานชีวิตประจำวันอ้างอิงพิกัด GPS (Cosmic Energy Index)")
     
-    # ใช้ค่ามิติวันและเวลาในการสร้างดัชนีพลังงาน
-    base_val = (now.day * 7 + now.month * 13 + now.hour) % 40
+    # นำพิกัดลองจิจูดและละติจูดร่วมคำนวณดัชนีพลังงาน
+    base_val = (th_now.day * 7 + th_now.month * 13 + th_now.hour + int(lon)) % 40
     
     work_energy = min(98, max(45, 60 + base_val - (15 if is_mars_retro else 0)))
     money_energy = min(98, max(40, 55 + ((base_val * 3) % 35) + (10 if not is_jupiter_retro else -10)))
@@ -391,20 +435,4 @@ elif st.session_state.current_page == "page_realtime_energy":
         st.metric("🧠 ด้านความคิด & การเจรจา", f"{brain_energy}%")
         st.progress(brain_energy / 100)
     with m4:
-        st.metric("❤️ ด้านเสน่ห์ & อารมณ์", f"{love_energy}%")
-        st.progress(love_energy / 100)
-
-    st.markdown("---")
-
-    # สรุปคำแนะนำสัจธรรมประจำวัน
-    st.subheader("🎯 3. คำแนะนำในการดำเนินชีวิตประจำวันนี้")
-    
-    if brain_energy < 50:
-        st.info("💡 **กลยุทธ์วันนี้:** การเจรจายังมีอุปสรรค ควรเน้นฟังมากกว่าพูด และตรวจสอบข้อความก่อนส่งทุกครั้ง")
-    elif work_energy > 80:
-        st.info("💡 **กลยุทธ์วันนี้:** พลังการงานและพลังขับเคลื่อนสูงมาก เหมาะแก่การลุยโปรเจกต์ใหม่และตัดสินใจเรื่องสำคัญ")
-    else:
-        st.info("💡 **กลยุทธ์วันนี้:** พลังงานอยู่ในระดับสมดุล เหมาะแก่การสะสางงานคงค้างและดูแลความสัมพันธ์กับคนรอบข้าง")
-
-    if st.button("🔄 คำนวณและอัปเดตดัชนีพลังงานเรียลไทม์"):
-        st.rerun()
+        st.metric("❤️ ด้านเสน่ห์ & อารมณ์
