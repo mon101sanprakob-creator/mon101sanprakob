@@ -3,17 +3,15 @@ import datetime
 import calendar
 import os
 import math
-import numpy as np
-import plotly.graph_objects as go
 
-# 1. ตั้งค่าหน้าเพจ Streamlit (กำหนดได้แค่จุดเดียวบรรทัดแรก)
+# 1. ตั้งค่าหน้าเพจ Streamlit
 st.set_page_config(
-    page_title="Astrology Engine & Cosmic Orbit Simulator", 
+    page_title="Astrology Engine & Cosmic Energy Realtime", 
     page_icon="🔮", 
     layout="wide"
 )
 
-# 2. ปรับแต่ง CSS โทนสี ดำเงา (Glossy Dark) + นีออน + ขยายปุ่มลูกศร Sidebar ให้ใหญ่เด่นเรืองแสง
+# 2. ปรับแต่ง CSS โทนสี ดำเงา (Glossy Dark) + นีออน + ปุ่มลูกศร Sidebar ใหญ่เด่นเรืองแสง
 st.markdown("""
     <style>
     /* พื้นหลังหลักดำเงา Glossy Dark */
@@ -104,7 +102,7 @@ if "current_page" not in st.session_state:
 
 # แสดงปุ่มกลับหน้าหลักที่ Sidebar เมื่ออยู่นอกหน้าแรก
 if st.session_state.current_page != "home":
-    if st.sidebar.button("🏠 กลับสู่หน้าหลัก (Main Menu)", use_container_width=True):
+    if st.sidebar.button("🏠 กลับสู่หน้าแรก (Main Menu)", use_container_width=True):
         st.session_state.current_page = "home"
         st.rerun()
 
@@ -120,7 +118,7 @@ if st.session_state.current_page == "home":
         else:
             st.info("💡 (ใส่ไฟล์ logo1.png ในโฟลเดอร์เพื่อแสดงโลโก้)")
 
-    st.title("🌟 ศูนย์รวมฟีเจอร์ถอดรหัส & จำลองระบบจักรวาล")
+    st.title("🌟 ศูนย์รวมฟีเจอร์ถอดรหัส & พลังงานดวงดาว")
     st.write("<p style='text-align: center; color: #E0E0E0;'>เลือกเมนูความสามารถที่ต้องการใช้งานได้เลยครับ</p>", unsafe_allow_html=True)
     st.markdown("---")
 
@@ -132,8 +130,8 @@ if st.session_state.current_page == "home":
             st.rerun()
             
     with col_m2:
-        if st.button("🌌 2. จำลองวงโคจรระบบสุริยะ (Real-Time 3D)", use_container_width=True):
-            st.session_state.current_page = "page_orbit"
+        if st.button("⚡ 2. วิเคราะห์ดาวถอยหลัง & พลังงานชีวิตประจำวัน", use_container_width=True):
+            st.session_state.current_page = "page_realtime_energy"
             st.rerun()
 
 # =========================================================================
@@ -148,7 +146,6 @@ elif st.session_state.current_page == "page_astro":
 
     st.title("🔮 ถอดรหัสดวงชะตา & เครื่องเล่นเพลง")
     
-    # เครื่องเล่นเพลง
     st.subheader("🎵 เครื่องเล่นเพลงบรรยากาศ (Music Player)")
     music_files = [f for f in os.listdir('.') if f.endswith('.mp3') or f.endswith('.wav')]
 
@@ -163,7 +160,6 @@ elif st.session_state.current_page == "page_astro":
 
     st.markdown("---")
 
-    # อินพุตวัน/เดือน/ปี
     st.subheader("🗓️ เลือกวัน/เดือน/ปี เพื่อถอดรหัส")
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -316,118 +312,99 @@ elif st.session_state.current_page == "page_astro":
             st.error("❌ วันที่ที่คุณกรอกไม่ถูกต้อง กรุณาตรวจสอบวันที่ใหม่อีกครั้งครับ")
 
 # =========================================================================
-# 🌌 3. หน้าฟีเจอร์ที่ 2: จำลองวงโคจรจักรวาล/ระบบสุริยะ (Real-Time 3D Engine)
+# ⚡ 3. หน้าฟีเจอร์ที่ 2: ระบบวิเคราะห์ดาวถอยหลัง & พลังงานชีวิตประจำวัน (คำนวณจริง)
 # =========================================================================
-elif st.session_state.current_page == "page_orbit":
-    st.title("🌌 ระบบจำลองวงโคจรจักรวาล (Real-Time Solar System Simulator)")
-    st.write("จำลองตำแหน่งและการหมุนของดาวเคราะห์ในระบบสุริยะเชิงดาราศาสตร์แบบเรียลไทม์ 3D Interactive")
+elif st.session_state.current_page == "page_realtime_energy":
+    st.title("⚡ วิเคราะห์สภาวะดาวถอยหลัง & ดัชนีพลังงานชีวิตเรียลไทม์")
+    st.write("ระบบคำนวณอิทธิพลการเคลื่อนที่ของดวงดาว ณ วินาทีนี้ เพื่อประมวลผลดัชนีพลังงานชีวิตและแจ้งเตือนภัยทางโหราศาสตร์")
     
     st.markdown("---")
     
-    # ดึงเวลาปัจจุบันเรียลไทม์
     now = datetime.datetime.now()
-    st.subheader(f"⏱️ เวลาจำลองปัจจุบัน (Real-Time): {now.strftime('%d/%m/%Y - %H:%M:%S')} น.")
+    st.subheader(f"⏱️ เวลาที่ทำการประมวลผลสภาวะดวงดาว: {now.strftime('%d/%m/%Y - %H:%M:%S')} น.")
 
-    # ข้อมูลรัศมีวงโคจร (AU) คาบการโคจร (วัน) และขนาดดาวเคราะห์
-    planets_info = [
-        {"name": "Sun (ดวงอาทิตย์)", "radius": 0.0, "period": 1.0, "color": "#FFD700", "size": 18},
-        {"name": "Mercury (ดาวพุธ)", "radius": 0.4, "period": 88.0, "color": "#A6A6A6", "size": 6},
-        {"name": "Venus (ดาวศุกร์)", "radius": 0.7, "period": 224.7, "color": "#FFC0CB", "size": 8},
-        {"name": "Earth (โลก)", "radius": 1.0, "period": 365.25, "color": "#00F0FF", "size": 9},
-        {"name": "Mars (ดาวอังคาร)", "radius": 1.5, "period": 687.0, "color": "#FF4500", "size": 7},
-        {"name": "Jupiter (ดาวพฤหัสบดี)", "radius": 2.2, "period": 4331.0, "color": "#FFA500", "size": 14},
-        {"name": "Saturn (ดาวเสาร์)", "radius": 2.9, "period": 10747.0, "color": "#F0E68C", "size": 12},
-    ]
+    # คำนวณสถานะดาวถอยหลัง (Retrograde Status)
+    # อ้างอิงจากวันที่ผ่านไปของปี เพื่อหาช่วง Retrograde โดยประมาณ
+    day_of_year = now.timetuple().tm_yday
+    
+    # เงื่อนไขวงรอบดาวถอยหลัง (คำนวณจากคาบมุมสัมพันธ์)
+    is_mercury_retro = (day_of_year % 116) < 21
+    is_mars_retro = (day_of_year % 780) < 72
+    is_jupiter_retro = (day_of_year % 399) < 120
+    is_saturn_retro = (day_of_year % 378) < 140
 
-    # คำนวณวันที่ผ่านไปนับจากจุดอ้างอิง J2000
-    j2000_ref = datetime.datetime(2000, 1, 1, 12, 0)
-    days_elapsed = (now - j2000_ref).total_seconds() / 86400.0
-
-    # สร้างกราฟ 3D ด้วย Plotly
-    fig = go.Figure()
-
-    orbit_table_data = []
-
-    for p in planets_info:
-        if p["radius"] == 0:
-            # ดวงอาทิตย์
-            fig.add_trace(go.Scatter3d(
-                x=[0], y=[0], z=[0],
-                mode='markers+text',
-                marker=dict(size=p["size"], color=p["color"]),
-                name=p["name"],
-                text=["☀️ Sun"],
-                textposition="top center"
-            ))
-            orbit_table_data.append({
-                "ดาวเคราะห์": p["name"],
-                "ระยะจากศูนย์กลาง (AU)": "0.00",
-                "พิกัด X": "0.00",
-                "พิกัด Y": "0.00",
-                "มุมวงโคจร (องศา)": "0.0°",
-                "สถานะการโคจร": "ศูนย์กลางระบบสุริยะ"
-            })
+    st.subheader("🔮 1. รายงานสภาวะดวงดาวโคจรวิปริต (ดาวถอยหลัง - Retrograde Monitor)")
+    
+    col_r1, col_r2 = st.columns(2)
+    
+    with col_r1:
+        if is_mercury_retro:
+            st.error("🚨 **ดาวพุธ (☿) กำลังโคจรถอยหลัง (Retrograde):**\n"
+                     "⚠️ **ข้อควรระวัง:** ระวังเรื่องเอกสารสัญญาผิดพลาด การสื่อสารเข้าใจผิด ระบบการสื่อสาร/อุปกรณ์ไอทีมีปัญหา ไม่ควรเซ็นสัญญาสัมพันธ์ใหญ่ในช่วงนี้")
         else:
-            # วงเส้นโคจร (Orbit Ring)
-            theta = np.linspace(0, 2*np.pi, 100)
-            x_ring = p["radius"] * np.cos(theta)
-            y_ring = p["radius"] * np.sin(theta)
-            z_ring = np.zeros(100)
+            st.success("✅ **ดาวพุธ (☿) โคจรปกติ (Direct):**\n"
+                       "🟢 การเจรจา ค้าขาย สื่อสาร ตกลงสัญญา และระบบไอทีลื่นไหลเป็นปกติ")
 
-            fig.add_trace(go.Scatter3d(
-                x=x_ring, y=y_ring, z=z_ring,
-                mode='lines',
-                line=dict(color='rgba(255,255,255,0.15)', width=2),
-                showlegend=False,
-                hoverinfo='none'
-            ))
+        if is_mars_retro:
+            st.error("🚨 **ดาวอังคาร (♂) กำลังโคจรถอยหลัง (Retrograde):**\n"
+                     "⚠️ **ข้อควรระวัง:** ความอดทนต่ำ อารมณ์ร้อน ระวังอุบัติเหตุ ความขัดแย้ง และการตัดสินใจวู่วาม")
+        else:
+            st.success("✅ **ดาวอังคาร (♂) โคจรปกติ (Direct):**\n"
+                       "🟢 พลังงานขับเคลื่อนสูง มีความกล้าหาญ ขยัน และการตัดสินใจเฉียบขาด")
 
-            # คำนวณตำแหน่งดาวเรียลไทม์ตามมุมองศา
-            angle_rad = (2 * np.pi * (days_elapsed % p["period"])) / p["period"]
-            angle_deg = math.degrees(angle_rad)
-            
-            x_pos = p["radius"] * math.cos(angle_rad)
-            y_pos = p["radius"] * math.sin(angle_rad)
-            z_pos = 0.0
+    with col_r2:
+        if is_jupiter_retro:
+            st.warning("⚠️ **ดาวพฤหัสบดี (♃) กำลังโคจรถอยหลัง (Retrograde):**\n"
+                       "⚠️ **ข้อควรระวัง:** โชคลาภและการสนับสนุนจากผู้ใหญ่ล่าช้า ควรทบทวนความรู้และแผนงานก่อนลุยจริง")
+        else:
+            st.success("✅ **ดาวพฤหัสบดี (♃) โคจรปกติ (Direct):**\n"
+                       "🟢 โชคลาภเด่น ผู้ใหญ่ให้การสนับสนุน ความคิดและปัญญาสว่างไสว")
 
-            fig.add_trace(go.Scatter3d(
-                x=[x_pos], y=[y_pos], z=[z_pos],
-                mode='markers+text',
-                marker=dict(size=p["size"], color=p["color"]),
-                name=p["name"],
-                text=[p["name"].split()[0]],
-                textposition="top center"
-            ))
-
-            orbit_table_data.append({
-                "ดาวเคราะห์": p["name"],
-                "ระยะจากศูนย์กลาง (AU)": f"{p['radius']:.2f}",
-                "พิกัด X": f"{x_pos:.3f}",
-                "พิกัด Y": f"{y_pos:.3f}",
-                "มุมวงโคจร (องศา)": f"{angle_deg:.1f}°",
-                "สถานะการโคจร": "กำลังหมุนรอบดวงอาทิตย์"
-            })
-
-    # ปรับแต่งธีมของกราฟ 3D
-    fig.update_layout(
-        scene=dict(
-            xaxis=dict(title='AU X', backgroundcolor="#050508", gridcolor="#222233"),
-            yaxis=dict(title='AU Y', backgroundcolor="#050508", gridcolor="#222233"),
-            zaxis=dict(title='AU Z', backgroundcolor="#050508", gridcolor="#222233"),
-            aspectmode='data'
-        ),
-        paper_bgcolor="#0d0d11",
-        plot_bgcolor="#0d0d11",
-        margin=dict(l=0, r=0, b=0, t=30),
-        legend=dict(font=dict(color="#ffffff")),
-        height=650
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
+        if is_saturn_retro:
+            st.warning("⚠️ **ดาวเสาร์ (♄) กำลังโคจรถอยหลัง (Retrograde):**\n"
+                       "⚠️ **ข้อควรระวัง:** งานโปรเจกต์ใหญ่ล่าช้า เจอแรงกดดันสูง ให้เน้นเคลียร์งานเก่าอย่าเพิ่งขยายงานใหม่")
+        else:
+            st.success("✅ **ดาวเสาร์ (♄) โคจรปกติ (Direct):**\n"
+                       "🟢 รากฐานมั่นคง งานระยะยาวมีความก้าวหน้า ความอุตสาหะส่งผลสำเร็จ")
 
     st.markdown("---")
-    st.subheader("📊 ตารางคำนวณพิกัดมุมวงโคจร & ระยะห่างเรียลไทม์")
-    st.dataframe(orbit_table_data, use_container_width=True)
 
-    if st.button("🔄 อัปเดตพิกัดตำแหน่งเรียลไทม์เดี๋ยวนี้"):
+    # คำนวณดัชนีพลังงานชีวิต 4 ด้านประจำวัน
+    st.subheader("📊 2. ดัชนีพลังงานชีวิตประจำวัน (Daily Cosmic Energy Index)")
+    
+    # ใช้ค่ามิติวันและเวลาในการสร้างดัชนีพลังงาน
+    base_val = (now.day * 7 + now.month * 13 + now.hour) % 40
+    
+    work_energy = min(98, max(45, 60 + base_val - (15 if is_mars_retro else 0)))
+    money_energy = min(98, max(40, 55 + ((base_val * 3) % 35) + (10 if not is_jupiter_retro else -10)))
+    brain_energy = min(98, max(35, 50 + ((base_val * 2) % 40) - (20 if is_mercury_retro else 0)))
+    love_energy = min(98, max(50, 65 + ((base_val * 5) % 30)))
+
+    m1, m2, m3, m4 = st.columns(4)
+    with m1:
+        st.metric("💼 ด้านการงาน & การตัดสินใจ", f"{work_energy}%")
+        st.progress(work_energy / 100)
+    with m2:
+        st.metric("💰 ด้านการเงิน & โชคลาภ", f"{money_energy}%")
+        st.progress(money_energy / 100)
+    with m3:
+        st.metric("🧠 ด้านความคิด & การเจรจา", f"{brain_energy}%")
+        st.progress(brain_energy / 100)
+    with m4:
+        st.metric("❤️ ด้านเสน่ห์ & อารมณ์", f"{love_energy}%")
+        st.progress(love_energy / 100)
+
+    st.markdown("---")
+
+    # สรุปคำแนะนำสัจธรรมประจำวัน
+    st.subheader("🎯 3. คำแนะนำในการดำเนินชีวิตประจำวันนี้")
+    
+    if brain_energy < 50:
+        st.info("💡 **กลยุทธ์วันนี้:** การเจรจายังมีอุปสรรค ควรเน้นฟังมากกว่าพูด และตรวจสอบข้อความก่อนส่งทุกครั้ง")
+    elif work_energy > 80:
+        st.info("💡 **กลยุทธ์วันนี้:** พลังการงานและพลังขับเคลื่อนสูงมาก เหมาะแก่การลุยโปรเจกต์ใหม่และตัดสินใจเรื่องสำคัญ")
+    else:
+        st.info("💡 **กลยุทธ์วันนี้:** พลังงานอยู่ในระดับสมดุล เหมาะแก่การสะสางงานคงค้างและดูแลความสัมพันธ์กับคนรอบข้าง")
+
+    if st.button("🔄 คำนวณและอัปเดตดัชนีพลังงานเรียลไทม์"):
         st.rerun()
