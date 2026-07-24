@@ -4,6 +4,13 @@ import calendar
 import os
 import math
 
+# นำเข้าไลบรารีสำหรับดึง GPS จากอุปกรณ์
+try:
+    from streamlit_js_eval import get_geolocation
+    HAS_GPS_LIB = True
+except ImportError:
+    HAS_GPS_LIB = False
+
 # 1. ตั้งค่าหน้าเพจ Streamlit
 st.set_page_config(
     page_title="Astrology Engine & Cosmic Energy Realtime", 
@@ -14,13 +21,11 @@ st.set_page_config(
 # 2. ปรับแต่ง CSS โทนสี ดำเงา (Glossy Dark) + นีออน + ปุ่มลูกศร Sidebar ใหญ่เด่นเรืองแสง
 st.markdown("""
     <style>
-    /* พื้นหลังหลักดำเงา Glossy Dark */
     .stApp {
         background: linear-gradient(135deg, #0d0d11 0%, #050508 50%, #150a21 100%);
         color: #ffffff;
     }
     
-    /* กล่องการ์ดมีเงา Glossy Glassmorphism */
     div[data-testid="stVerticalBlock"] > div {
         background: rgba(20, 20, 30, 0.6);
         border-radius: 15px;
@@ -29,7 +34,6 @@ st.markdown("""
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
     }
 
-    /* หัวข้อสีทองนีออน (Neon Gold) */
     h1 {
         color: #FFD700 !important;
         text-shadow: 0 0 10px #FFD700, 0 0 20px #FF8C00;
@@ -41,7 +45,6 @@ st.markdown("""
         text-shadow: 0 0 8px #00F0FF;
     }
 
-    /* ปุ่มกดสีม่วง-แดง นีออน */
     .stButton > button {
         background: linear-gradient(45deg, #FF0055, #7A00FF) !important;
         color: #FFFFFF !important;
@@ -56,7 +59,6 @@ st.markdown("""
         box-shadow: 0 0 25px #00FF66, 0 0 30px #00F0FF !important;
     }
 
-    /* ตารางและ Metric */
     div[data-testid="stMetricValue"] {
         color: #00FF66 !important;
         text-shadow: 0 0 10px #00FF66;
@@ -67,7 +69,6 @@ st.markdown("""
         box-shadow: 0 0 10px rgba(0, 255, 102, 0.3);
     }
 
-    /* ================= 🛠️ ขยายปุ่มลูกศรเปิด-ปิด Sidebar ด้านซ้าย ================= */
     [data-testid="stSidebarCollapseButton"] button,
     [data-testid="stSidebarExpandButton"] button {
         background: linear-gradient(135deg, #FF0055, #7A00FF) !important;
@@ -96,34 +97,29 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 3. จัดการสถานะเปลี่ยนหน้า (Session State)
+# 3. จัดการสถานะเปลี่ยนหน้า
 if "current_page" not in st.session_state:
     st.session_state.current_page = "home"
 
-# แสดงปุ่มกลับหน้าหลักที่ Sidebar เมื่ออยู่นอกหน้าแรก
 if st.session_state.current_page != "home":
     if st.sidebar.button("🏠 กลับสู่หน้าแรก (Main Menu)", use_container_width=True):
         st.session_state.current_page = "home"
         st.rerun()
 
 # =========================================================================
-# 🏠 1. หน้าแรก (HOME / LANDING PAGE)
+# 🏠 1. หน้าแรก (HOME)
 # =========================================================================
 if st.session_state.current_page == "home":
-    
     col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
     with col_logo2:
         if os.path.exists("logo1.png"):
             st.image("logo1.png", use_container_width=True)
-        else:
-            st.info("💡 (ใส่ไฟล์ logo1.png ในโฟลเดอร์เพื่อแสดงโลโก้)")
 
     st.title("🌟 ศูนย์รวมฟีเจอร์ถอดรหัส & พลังงานดวงดาว")
     st.write("<p style='text-align: center; color: #E0E0E0;'>เลือกเมนูความสามารถที่ต้องการใช้งานได้เลยครับ</p>", unsafe_allow_html=True)
     st.markdown("---")
 
     col_m1, col_m2 = st.columns(2)
-    
     with col_m1:
         if st.button("🔮 1. ถอดรหัสดวงชะตา & เพลง", use_container_width=True):
             st.session_state.current_page = "page_astro"
@@ -135,10 +131,9 @@ if st.session_state.current_page == "home":
             st.rerun()
 
 # =========================================================================
-# 🔮 2. หน้าฟีเจอร์ที่ 1: ถอดรหัสดวงชะตา & เครื่องเล่นเพลง
+# 🔮 2. หน้าฟีเจอร์ที่ 1: ถอดรหัสดวงชะตา
 # =========================================================================
 elif st.session_state.current_page == "page_astro":
-    
     col_logo1, col_logo2, col_logo3 = st.columns([1, 2, 1])
     with col_logo2:
         if os.path.exists("logo1.png"):
@@ -312,30 +307,37 @@ elif st.session_state.current_page == "page_astro":
             st.error("❌ วันที่ที่คุณกรอกไม่ถูกต้อง กรุณาตรวจสอบวันที่ใหม่อีกครั้งครับ")
 
 # =========================================================================
-# ⚡ 3. หน้าฟีเจอร์ที่ 2: ระบบวิเคราะห์ดาวถอยหลัง & GPS พิกัดเวลาท้องถิ่นเรียลไทม์
+# ⚡ 3. หน้าฟีเจอร์ที่ 2: ระบบวิเคราะห์ดาวถอยหลัง & GPS พิกัดเวลาท้องถิ่นจริง
 # =========================================================================
 elif st.session_state.current_page == "page_realtime_energy":
     st.title("⚡ วิเคราะห์สภาวะดาวถอยหลัง & GPS พิกัดเวลาท้องถิ่นเรียลไทม์")
-    st.write("ระบบดึงเวลามาตรฐานประเทศไทย (GMT+7) และคำนวณตำแหน่งพิกัด GPS ละติจูด-ลองจิจูด เพื่อความแม่นยำทางดาราศาสตร์")
+    st.write("ระบบคำนวณตำแหน่งพิกัด GPS อัตโนมัติจากอุปกรณ์ของคุณ เพื่อความแม่นยำทางดาราศาสตร์รายบุคคล")
     
     st.markdown("---")
     
-    # 📌 1. ระบบจัดการเวลาประเทศไทย (GMT+7)
-    utc_now = datetime.datetime.utcnow()
-    th_now = utc_now + datetime.timedelta(hours=7)
+    # 📌 1. ระบบดึง GPS จากโทรศัพท์/คอมพิวเตอร์
+    st.subheader("📍 พิกัดตำแหน่ง GPS ปัจจุบันของคุณ")
     
-    # 📌 2. ตั้งค่าตำแหน่ง GPS ละติจูด / ลองจิจูด
-    st.subheader("📍 กำหนดพิกัด GPS ละติจูด-ลองจิจูด สำหรับตำแหน่งของคุณ")
+    default_lat, default_lon = 13.7563, 100.5018  # ค่าเริ่มต้น กทม.
     
+    if HAS_GPS_LIB:
+        location = get_geolocation()
+        if location and "coords" in location:
+            default_lat = location["coords"]["latitude"]
+            default_lon = location["coords"]["longitude"]
+            st.success("✅ ดึงพิกัด GPS จากอุปกรณ์ของคุณสำเร็จแล้ว!")
+        else:
+            st.info("💡 กดยินยอมเปิด Location บนเบราว์เซอร์เพื่อดึงตำแหน่ง GPS จริง หรือเลือกลิสต์ด้านล่างได้ครับ")
+    else:
+        st.warning("⚠️ กรุณาใส่ `streamlit-js-eval` ในไฟล์ requirements.txt เพื่อเปิดใช้งานระบบดึง GPS อัตโนมัติ")
+
     col_gps1, col_gps2, col_gps3 = st.columns([2, 2, 2])
     with col_gps1:
         province_preset = st.selectbox(
-            "🏙️ เลือกจังหวัด (หรือกรอกพิกัดเอง):",
-            ["กรุงเทพมหานคร (Bangkok)", "เชียงใหม่ (Chiang Mai)", "ภูเก็ต (Phuket)", "ขอนแก่น (Khon Kaen)", "ชลบุรี (Chonburi)", "กำหนดพิกัดเอง (Custom GPS)"]
+            "🏙️ เลือกจังหวัด (หากไม่เปิด GPS):",
+            ["📍 ใช้ค่าจาก GPS อุปกรณ์", "กรุงเทพมหานคร (Bangkok)", "เชียงใหม่ (Chiang Mai)", "ภูเก็ต (Phuket)", "ขอนแก่น (Khon Kaen)", "ชลบุรี (Chonburi)"]
         )
     
-    # กำหนดพิกัดเริ่มต้นตามจังหวัด
-    default_lat, default_lon = 13.7563, 100.5018  # กทม
     if province_preset == "เชียงใหม่ (Chiang Mai)":
         default_lat, default_lon = 18.7883, 98.9853
     elif province_preset == "ภูเก็ต (Phuket)":
@@ -344,15 +346,20 @@ elif st.session_state.current_page == "page_realtime_energy":
         default_lat, default_lon = 16.4419, 102.8360
     elif province_preset == "ชลบุรี (Chonburi)":
         default_lat, default_lon = 13.3611, 100.9847
+    elif province_preset == "กรุงเทพมหานคร (Bangkok)":
+        default_lat, default_lon = 13.7563, 100.5018
 
     with col_gps2:
-        lat = st.number_input("🌐 ละติจูด (Latitude):", value=default_lat, format="%.4f")
+        lat = st.number_input("🌐 ละติจูด (Latitude):", value=float(default_lat), format="%.4f")
     with col_gps3:
-        lon = st.number_input("🌐 ลองจิจูด (Longitude):", value=default_lon, format="%.4f")
+        lon = st.number_input("🌐 ลองจิจูด (Longitude):", value=float(default_lon), format="%.4f")
 
-    # คำนวณเวลาท้องถิ่นจริงตามลองจิจูด (Local Mean Time - LMT)
-    # 1 องศาลองจิจูด = เวลาต่างกัน 4 นาที
-    lon_offset_minutes = (lon - 105.0) * 4  # เทียบกับเส้นเวลามาตรฐานประเทศไทยที่ 105°E
+    # เวลาประเทศไทย (GMT+7)
+    utc_now = datetime.datetime.utcnow()
+    th_now = utc_now + datetime.timedelta(hours=7)
+
+    # คำนวณ Local Mean Time (LMT) จากลองจิจูดจริง (1° = 4 นาที)
+    lon_offset_minutes = (lon - 105.0) * 4
     lmt_now = th_now + datetime.timedelta(minutes=lon_offset_minutes)
 
     st.markdown("---")
@@ -361,15 +368,13 @@ elif st.session_state.current_page == "page_realtime_energy":
     with c_t1:
         st.metric("🇹🇭 เวลามาตรฐานไทย (GMT+7)", th_now.strftime("%H:%M:%S น."))
     with c_t2:
-        st.metric("🧭 เวลาท้องถิ่นจริง (Local Mean Time)", lmt_now.strftime("%H:%M:%S น."))
+        st.metric("🧭 เวลาท้องถิ่นจริงตาม GPS (LMT)", lmt_now.strftime("%H:%M:%S น."))
     with c_t3:
-        st.metric("📍 พิกัดอ้างอิง GPS", f"{lat:.2f}°N, {lon:.2f}°E")
-
-    st.caption(f"💡 เวลาท้องถิ่นจริง (LMT) คำนวณจากมุมลองจิจูด {lon:.4f}°E ทำให้ระบุตำแหน่งอาศาย์และลัคนาได้ตรงจุด 100%")
+        st.metric("📍 พิกัดอ้างอิง GPS", f"{lat:.4f}°N, {lon:.4f}°E")
 
     st.markdown("---")
 
-    # 🔮 3. คำนวณสถานะดาวถอยหลัง (Retrograde Status)
+    # 🔮 2. คำนวณสถานะดาวถอยหลัง (Retrograde Status)
     day_of_year = th_now.timetuple().tm_yday
     
     is_mercury_retro = (day_of_year % 116) < 21
@@ -413,11 +418,10 @@ elif st.session_state.current_page == "page_realtime_energy":
 
     st.markdown("---")
 
-    # 📊 4. คำนวณดัชนีพลังงานชีวิต 4 ด้านประจำวันตามพิกัด
+    # 📊 3. คำนวณดัชนีพลังงานชีวิต 4 ด้านประจำวันตามพิกัด
     st.subheader("📊 2. ดัชนีพลังงานชีวิตประจำวันอ้างอิงพิกัด GPS (Cosmic Energy Index)")
     
-    # นำพิกัดลองจิจูดและละติจูดร่วมคำนวณดัชนีพลังงาน
-    base_val = (th_now.day * 7 + th_now.month * 13 + th_now.hour + int(lon)) % 40
+    base_val = (th_now.day * 7 + th_now.month * 13 + th_now.hour + int(lon * 100)) % 40
     
     work_energy = min(98, max(45, 60 + base_val - (15 if is_mars_retro else 0)))
     money_energy = min(98, max(40, 55 + ((base_val * 3) % 35) + (10 if not is_jupiter_retro else -10)))
@@ -435,20 +439,4 @@ elif st.session_state.current_page == "page_realtime_energy":
         st.metric("🧠 ด้านความคิด & การเจรจา", f"{brain_energy}%")
         st.progress(brain_energy / 100)
     with m4:
-        st.metric("❤️ ด้านเสน่ห์ & อารมณ์", f"{love_energy}%")
-        st.progress(love_energy / 100)
-
-    st.markdown("---")
-
-    # 🎯 5. คำแนะนำชีวิตประจำวัน
-    st.subheader("🎯 3. คำแนะนำในการดำเนินชีวิตประจำวันนี้")
-    
-    if brain_energy < 50:
-        st.info("💡 **กลยุทธ์วันนี้:** การเจรจายังมีอุปสรรค ควรเน้นฟังมากกว่าพูด และตรวจสอบข้อความก่อนส่งทุกครั้ง")
-    elif work_energy > 80:
-        st.info("💡 **กลยุทธ์วันนี้:** พลังการงานและพลังขับเคลื่อนสูงมาก เหมาะแก่การลุยโปรเจกต์ใหม่และตัดสินใจเรื่องสำคัญ")
-    else:
-        st.info("💡 **กลยุทธ์วันนี้:** พลังงานอยู่ในระดับสมดุล เหมาะแก่การสะสางงานคงค้างและดูแลความสัมพันธ์กับคนรอบข้าง")
-
-    if st.button("🔄 อัปเดตเวลาและคำนวณพิกัด GPS เดี๋ยวนี้"):
-        st.rerun()
+        st.metric("❤️ ด้านเสน่ห์ 
