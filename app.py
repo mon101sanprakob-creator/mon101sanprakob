@@ -166,8 +166,8 @@ elif st.session_state.current_page == "page_astro":
 
     ZODIAC_NAMES = [
         "ราศีเมษ ♈", "ราศีพฤษภ ♉", "ราศีเมถุน ♊", "ราศีกรกฎ ♋",
-        "ราศีสิงห์         "ราศีกันย์ ♍", "ราศีตุลย์ ♎", "ราศีพิจิก ♏", "ราศีธนู ♐",
-        "ราศีมังกร ♑", "ราศีกุมภ์ ♒", "ราศีมีน ♓"
+        "ราศีสิงห์ ♌", "ราศีกันย์ ♍", "ราศีตุลย์ ♎", "ราศีพิจิก ♏", 
+        "ราศีธนู ♐", "ราศีมังกร ♑", "ราศีกุมภ์ ♒", "ราศีมีน ♓"
     ]
 
     zodiac_index = (day + month) % 12
@@ -209,9 +209,7 @@ elif st.session_state.current_page == "page_realtime_energy":
 
     st.markdown("---")
     
-    # -------------------------------------------------------------
-    # ฟีเจอร์ใหม่: ให้ผู้ใช้งานระบุวัน/เดือน/ปีเกิด
-    # -------------------------------------------------------------
+    # ฟีเจอร์: ให้ผู้ใช้งานระบุวัน/เดือน/ปีเกิด
     st.subheader("👤 ข้อมูลส่วนบุคคล (สำหรับคำนวณพลังงานเจาะจงบุคคล)")
     use_user_dob = st.checkbox("📌 ต้องการระบุวัน/เดือน/ปีเกิด เพื่อประมวลผลดวงชะตาเฉพาะบุคคล", value=True)
     
@@ -259,7 +257,6 @@ elif st.session_state.current_page == "page_realtime_energy":
     st.markdown("### 🪐 สถานะการโคจรของดาวเคราะห์ (Retrograde Monitor)")
     col_p1, col_p2, col_p3 = st.columns(3)
     
-    # คำนวณแบบจำลองตามตำแหน่งวัน
     mercury_retro = (now.day % 3 == 0)
     mars_retro = (now.day % 5 == 0)
     jupiter_retro = (now.month % 2 == 0)
@@ -274,7 +271,6 @@ elif st.session_state.current_page == "page_realtime_energy":
     # 3. คำนวณพลังงานชีวิตเรียลไทม์ (ปรับสูตรตามวันเกิด + พิกัด GPS)
     st.markdown("### ⚡ ดัชนีพลังงานชีวิตตามพิกัด GPS & วันเกิดเรียลไทม์")
     
-    # สูตรประมวลผลดวงผสม (Time + Lat + Lon + Life Path Number)
     base_calc = (lat * lon) + now.second + (dob_sum * 10)
     
     work_energy = int((math.sin(base_calc) + 1) * 50)
