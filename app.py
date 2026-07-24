@@ -135,7 +135,7 @@ if st.session_state.current_page == "home":
             st.rerun()
 
 # =========================================================================
-# 🔮 2. หน้าฟีเจอร์ที่ 1: ถอดรหัสดวงชะตา & เครื่องเล่นเพลง (โค้ดเดิม)
+# 🔮 2. หน้าฟีเจอร์ที่ 1: ถอดรหัสดวงชะตา & เครื่องเล่นเพลง
 # =========================================================================
 elif st.session_state.current_page == "page_astro":
     
@@ -152,9 +152,9 @@ elif st.session_state.current_page == "page_astro":
     if music_files:
         selected_song = st.selectbox("🎧 เลือกเพลงที่จะเปิดฟัง:", music_files)
         if selected_song:
-            audio_file = open(selected_song, 'rb')
-            audio_bytes = audio_file.read()
-            st.audio(audio_bytes, format='audio/mp3')
+            with open(selected_song, 'rb') as audio_file:
+                audio_bytes = audio_file.read()
+                st.audio(audio_bytes, format='audio/mp3')
     else:
         st.caption("📁 ไม่พบไฟล์เพลง (.mp3 / .wav) ในโฟลเดอร์นี้")
 
@@ -435,4 +435,4 @@ elif st.session_state.current_page == "page_realtime_energy":
         st.metric("🧠 ด้านความคิด & การเจรจา", f"{brain_energy}%")
         st.progress(brain_energy / 100)
     with m4:
-        st.metric("❤️ ด้านเสน่ห์ & อารมณ์
+        st.metric("❤️ ด้านเสน่ห์ & อา
