@@ -115,7 +115,7 @@ if st.session_state.current_page == "home":
         if os.path.exists("logo1.png"):
             st.image("logo1.png", use_container_width=True)
 
-    st.title("🌟 ศูนย์รวมฟีเจอร์ถอดรหัส & พลังงานดวงดาว")
+    st.title("🌟 อยู่นิ้งๆไม่เจ็บตัว.ฟีเจอร์ถอดรหัส & พลังงานดวงดาว")
     st.write("<p style='text-align: center; color: #E0E0E0;'>เลือกเมนูความสามารถที่ต้องการใช้งานได้เลยครับ</p>", unsafe_allow_html=True)
     st.markdown("---")
 
@@ -439,4 +439,20 @@ elif st.session_state.current_page == "page_realtime_energy":
         st.metric("🧠 ด้านความคิด & การเจรจา", f"{brain_energy}%")
         st.progress(brain_energy / 100)
     with m4:
-        st.metric("❤️ ด้านเสน่ห์ 
+        st.metric("❤️ ด้านเสน่ห์ & อารมณ์", f"{love_energy}%")
+        st.progress(love_energy / 100)
+
+    st.markdown("---")
+
+    # 🎯 4. คำแนะนำชีวิตประจำวัน
+    st.subheader("🎯 3. คำแนะนำในการดำเนินชีวิตประจำวันนี้")
+    
+    if brain_energy < 50:
+        st.info("💡 **กลยุทธ์วันนี้:** การเจรจายังมีอุปสรรค ควรเน้นฟังมากกว่าพูด และตรวจสอบข้อความก่อนส่งทุกครั้ง")
+    elif work_energy > 80:
+        st.info("💡 **กลยุทธ์วันนี้:** พลังการงานและพลังขับเคลื่อนสูงมาก เหมาะแก่การลุยโปรเจกต์ใหม่และตัดสินใจเรื่องสำคัญ")
+    else:
+        st.info("💡 **กลยุทธ์วันนี้:** พลังงานอยู่ในระดับสมดุล เหมาะแก่การสะสางงานคงค้างและดูแลความสัมพันธ์กับคนรอบข้าง")
+
+    if st.button("🔄 อัปเดตพิกัด GPS และเวลาปัจจุบัน"):
+        st.rerun()
