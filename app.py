@@ -12,7 +12,7 @@ from streamlit_js_eval import get_geolocation
 # 1. Page Configuration & Custom CSS (Neon Glossy Dark Theme)
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="Personal Astro Calendar",
+    page_title="อยู่นิ้งๆไม่เจ็บตัว",
     page_icon="🔮",
     layout="wide"
 )
@@ -215,7 +215,7 @@ def get_numerology_and_taksa(date_obj):
 logo_col, title_col = st.columns([1, 4])
 with logo_col:
     if os.path.exists("logo1.png"):
-        st.image("logo1.png", width=130)
+        st.image("logo1.png", width=300)
     else:
         st.markdown("<h1 class='text-gold'>🔮</h1>", unsafe_allow_html=True)
 
