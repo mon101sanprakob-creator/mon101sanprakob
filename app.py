@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 
 # ---------------------------------------------------------
-# ฟังก์ชันดึงรหัสความหมายสากล (QID) จาก Wikidata API แบบเรียลไทม์
+# ฟังก์ชันดึงรหัสความหมายสากล (QID) จาก Wikidata API (แก้ไข User-Agent แล้ว)
 # ---------------------------------------------------------
 def get_wikidata_id(search_text, lang_code="th"):
     """ค้นหารหัสตัวเลขความหมายกลาง (QID) จากคำศัพท์ทุกคำในโลก"""
@@ -14,8 +14,13 @@ def get_wikidata_id(search_text, lang_code="th"):
         "search": search_text,
         "limit": 1
     }
+    # กำหนด User-Agent เพื่อป้องกันโดน Wikidata บล็อก
+    headers = {
+        "User-Agent": "UniversalLanguageApp/1.0 (contact: admin@example.com)"
+    }
+    
     try:
-        response = requests.get(url, params=params, timeout=5)
+        response = requests.get(url, params=params, headers=headers, timeout=10)
         data = response.json()
         if data.get("search"):
             entity = data["search"][0]
@@ -38,8 +43,12 @@ def get_translation_from_qid(qid, target_lang_code="en"):
         "props": "labels|descriptions",
         "languages": target_lang_code
     }
+    headers = {
+        "User-Agent": "UniversalLanguageApp/1.0 (contact: admin@example.com)"
+    }
+    
     try:
-        response = requests.get(url, params=params, timeout=5)
+        response = requests.get(url, params=params, headers=headers, timeout=10)
         data = response.json()
         entities = data.get("entities", {})
         if qid in entities:
