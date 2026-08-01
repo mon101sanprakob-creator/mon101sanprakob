@@ -1,148 +1,121 @@
 import streamlit as st
+import requests
 
 # ---------------------------------------------------------
-# 1. คลังรหัสความหมายสากล (Wikidata Universal QID Engine)
-# เชื่อมโยง: รหัสกลาง (QID) <-> ภาษาพูด <-> คำอ่าน <-> ภาษามือ
+# ฟังก์ชันดึงรหัสความหมายสากล (QID) จาก Wikidata API แบบเรียลไทม์
 # ---------------------------------------------------------
-UNIVERSAL_DATABASE = {
-    "Q1020": {
-        "concept": "กาแฟ (Coffee / ☕)",
-        "category": "อาหารและเครื่องดื่ม",
-        "data": {
-            "th": {"word": "กาแฟ", "pron": "กา-แฟ"},
-            "en": {"word": "Coffee", "pron": "คอฟ-ฟี่"},
-            "jp": {"word": "コーヒー", "pron": "โค-ฮี"},
-            "cn": {"word": "咖啡", "pron": "คา-เฟย"},
-            "sign_tsl": {"word": "🤟 ภาษามือไทย (TSL)", "instruction": "ทำมือกำหลวมๆ แล้วหมุนวนบริเวณข้างแก้มหรือหน้าอก (สัญลักษณ์การบดกาแฟ)"},
-            "sign_asl": {"word": "🤟 ภาษามืออเมริกัน (ASL)", "instruction": "หมุนกำปั้นขวาบนกำปั้นซ้าย (Coffee Grinding Sign)"}
-        }
-    },
-    "Q8686": {
-        "concept": "การทักทาย (Greeting / 👋)",
-        "category": "หมวดการสื่อสาร",
-        "data": {
-            "th": {"word": "สวัสดี", "pron": "สะ-วัด-ดี"},
-            "en": {"word": "Hello", "pron": "เฮ็ล-โล"},
-            "jp": {"word": "こんにちは", "pron": "คอน-นิ-จิวะ"},
-            "cn": {"word": "你好", "pron": "หนี-ห่าว"},
-            "sign_tsl": {"word": "🤟 ภาษามือไทย (TSL)", "instruction": "พนมมือไหว้ระดับอก พร้อมพยักหน้าเล็กน้อย"},
-            "sign_asl": {"word": "🤟 ภาษามืออเมริกัน (ASL)", "instruction": "ยกมือขึ้นแตะหน้าผากแล้วโบกออกด้านข้าง (Salute Waving Sign)"}
-        }
-    },
-    "Q539": {
-        "concept": "การไป / การเดินทาง (Go / 🚶)",
-        "category": "หมวดการกระทำ (Action)",
-        "data": {
-            "th": {"word": "ไป", "pron": "ไป"},
-            "en": {"word": "Go", "pron": "โก"},
-            "jp": {"word": "行く", "pron": "อิ-คุ"},
-            "cn": {"word": "去", "pron": "ชวี่"},
-            "sign_tsl": {"word": "🤟 ภาษามือไทย (TSL)", "instruction": "ชูนิ้วชี้ทั้งสองข้าง แล้วชี้พุ่งชี้ไปข้างหน้าพร้อมกัน"},
-            "sign_asl": {"word": "🤟 ภาษามืออเมริกัน (ASL)", "instruction": "ชูนิ้วชี้สองข้างหมุนไปทิศทางที่จะไป (Point Forward)"}
-        }
-    },
-    "Q102": {
-        "concept": "ขอบคุณ (Thank you / 🙏)",
-        "category": "หมวดมารยาท",
-        "data": {
-            "th": {"word": "ขอบคุณ", "pron": "ขอบ-คุณ"},
-            "en": {"word": "Thank you", "pron": "แธงค์-ยู"},
-            "jp": {"word": "ありがとう", "pron": "อะ-ริ-กา-โตะ"},
-            "cn": {"word": "谢谢", "pron": "เซี่ย-เซี่ย"},
-            "sign_tsl": {"word": "🤟 ภาษามือไทย (TSL)", "instruction": "แบมือแตะที่คางแล้วยื่นออกไปหาฝ่ายตรงข้าม"},
-            "sign_asl": {"word": "🤟 ภาษามืออเมริกัน (ASL)", "instruction": "ใช้นิ้วมือแตะริมฝีปากล่างแล้วยื่นมือออกไปหาผู้รับ"}
-        }
+def get_wikidata_id(search_text, lang_code="th"):
+    """ค้นหารหัสตัวเลขความหมายกลาง (QID) จากคำศัพท์ทุกคำในโลก"""
+    url = "https://www.wikidata.org/w/api.php"
+    params = {
+        "action": "wbsearchentities",
+        "format": "json",
+        "language": lang_code,
+        "search": search_text,
+        "limit": 1
     }
-}
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        data = response.json()
+        if data.get("search"):
+            entity = data["search"][0]
+            return {
+                "qid": entity["id"],                          # รหัสตัวเลขกลาง (เช่น Q1020)
+                "label": entity.get("label", search_text),     # คำศัพท์
+                "description": entity.get("description", "") # คำอธิบายความหมาย
+            }
+    except Exception as e:
+        st.error(f"เกิดข้อผิดพลาดในการเชื่อมต่อ: {e}")
+    return None
 
+def get_translation_from_qid(qid, target_lang_code="en"):
+    """ดึงคำแปลในภาษาปลายทางจากรหัสตัวเลขกลาง (QID)"""
+    url = "https://www.wikidata.org/w/api.php"
+    params = {
+        "action": "wbgetentities",
+        "format": "json",
+        "ids": qid,
+        "props": "labels|descriptions",
+        "languages": target_lang_code
+    }
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        data = response.json()
+        entities = data.get("entities", {})
+        if qid in entities:
+            labels = entities[qid].get("labels", {})
+            if target_lang_code in labels:
+                return labels[target_lang_code]["value"]
+    except Exception:
+        pass
+    return "ไม่พบคำแปลในภาษานี้"
+
+# ---------------------------------------------------------
+# รายชื่อภาษาที่รองรับ
+# ---------------------------------------------------------
 LANGUAGES = {
     "th": "🇹🇭 ภาษาไทย (Thai)",
     "en": "🇺🇸 ภาษาอังกฤษ (English)",
-    "jp": "🇯🇵 ภาษาญี่ปุ่น (Japanese)",
-    "cn": "🇨🇳 ภาษาจีน (Chinese)",
-    "sign_tsl": "🤟 ภาษามือไทย (Thai Sign Language)",
-    "sign_asl": "🤟 ภาษามืออเมริกัน (ASL)"
+    "ja": "🇯🇵 ภาษาญี่ปุ่น (Japanese)",
+    "zh": "🇨🇳 ภาษาจีน (Chinese)",
+    "fr": "🇫🇷 ภาษาฝรั่งเศส (French)",
+    "es": "🇪🇸 ภาษาสเปน (Spanish)",
+    "de": "🇩🇪 ภาษาเยอรมัน (German)",
+    "ko": "🇰🇷 ภาษาเกาหลี (Korean)",
+    "ru": "🇷🇺 ภาษารัสเซีย (Russian)",
+    "ar": "🇦🇪 ภาษาอาหรับ (Arabic)"
 }
 
 # ---------------------------------------------------------
-# 2. ฟังก์ชันแปลข้อมูลด้วย Universal ID
+# หน้าตาแอป Streamlit
 # ---------------------------------------------------------
-def search_qid_by_input(text, src_lang):
-    text_clean = text.strip().lower()
-    for qid, item in UNIVERSAL_DATABASE.items():
-        lang_data = item["data"].get(src_lang, {})
-        word = lang_data.get("word", "").lower()
-        if text_clean == word:
-            return qid, item
-    return None, None
+st.set_page_config(page_title="Universal Live Translator", page_icon="🌐", layout="wide")
 
-# ---------------------------------------------------------
-# 3. หน้าตาแอป Streamlit
-# ---------------------------------------------------------
-st.set_page_config(page_title="Universal Meaning Protocol", page_icon="🌐", layout="wide")
-
-st.title("🌐 Universal Language & Sign Language Protocol")
-st.caption("ระบบรหัสสื่อสารสากล: เชื่อมโยง **ภาษาพูด + ตัวอักษร + ภาษามือ** ด้วยรหัสความหมายเดียวกัน (QID)")
+st.title("🌐 Universal Language Code Translator (Live Wikidata)")
+st.caption("แปลง **ทุกคำศัพท์ในโลก** ให้กลายเป็น **'รหัสตัวเลขความหมายเดียวกัน (QID)'** ผ่านระบบ Wikidata สากล")
 
 st.divider()
 
 col1, col2 = st.columns(2)
 with col1:
-    src_lang = st.selectbox("1. ช่องทางส่งข้อมูล (Sender)", options=list(LANGUAGES.keys()), format_func=lambda x: LANGUAGES[x], index=0)
+    src_lang = st.selectbox("1. ภาษาต้นทาง (Input)", options=list(LANGUAGES.keys()), format_func=lambda x: LANGUAGES[x], index=0)
 
 with col2:
-    tgt_lang = st.selectbox("2. ช่องทางรับข้อมูล (Receiver)", options=list(LANGUAGES.keys()), format_func=lambda x: LANGUAGES[x], index=4) # Default เป็นภาษามือไทย
+    tgt_lang = st.selectbox("2. ภาษาปลายทาง (Output)", options=list(LANGUAGES.keys()), format_func=lambda x: LANGUAGES[x], index=1)
 
-user_text = st.text_input("พิมพ์คำพูด / ข้อความต้นทาง (ลองพิมพ์: สวัสดี / กาแฟ / ไป / ขอบคุณ):", value="สวัสดี" if src_lang=="th" else "Hello")
+user_input = st.text_input("พิมพ์คำศัพท์ / ข้อความอะไรก็ได้ในโลก (เช่น สับปะรด / คอมพิวเตอร์ / ความสุข / รถไฟ):", value="สับปะรด")
 
-if st.button("🚀 ส่งรหัสความหมายข้ามระบบ", type="primary", use_container_width=True):
-    qid, qdata = search_qid_by_input(user_text, src_lang)
-    
-    if qid:
-        target_info = qdata["data"].get(tgt_lang, {})
-        
-        st.success(f"✅ แปลงเป็นรหัสความหมายสากลสำเร็จ!")
-        
-        # แสดงผลกระบวนการสื่อสาร 3 ขั้นตอน
-        res_col1, res_col2, res_col3 = st.columns([1, 1.2, 1.5])
-        
-        with res_col1:
-            st.info("📤 **1. ต้นทางส่งข้อมูล**")
-            st.metric("คำที่ส่ง", user_text)
-            st.write(f"หมวดหมู่: **{qdata['category']}**")
+if st.button("🚀 ค้นหารหัสความหมายกลางและแปลภาษา", type="primary", use_container_width=True):
+    if user_input:
+        with st.spinner("กำลังค้นหารหัสตัวเลขความหมายสากล..."):
+            result = get_wikidata_id(user_input, src_lang)
             
-        with res_col2:
-            st.warning("⚡ **2. รหัสกลางส่งข้ามระบบ**")
-            st.metric("Universal QID", f"[{qid}]")
-            st.caption(f"ความหมาย: {qdata['concept']}")
-            
-        with res_col3:
-            st.success("📥 **3. ปลายทางรับข้อมูล**")
-            target_word = target_info.get("word", "N/A")
-            st.metric("ผลลัพธ์ปลายทาง", target_word)
-            
-            # ถ้าปลายทางเป็นภาษามือ ให้แสดงวิธีทำท่าทาง
-            if "instruction" in target_info:
-                st.markdown(f"**🖐️ วิธีทำท่าภาษามือ:** {target_info['instruction']}")
+            if result:
+                qid = result["qid"]
+                description = result["description"]
+                
+                # ดึงคำแปลปลายทาง
+                translated_text = get_translation_from_qid(qid, tgt_lang)
+                
+                st.success("✅ แปลงภาษาด้วยรหัสตัวเลขสากลสำเร็จ!")
+                
+                c1, c2, c3 = st.columns([1, 1.2, 1])
+                
+                with c1:
+                    st.info("📤 **ภาษาต้นทาง**")
+                    st.metric("คำที่พิมพ์", user_input)
+                    st.caption(f"คำอธิบาย: {description if description else '-'}")
+                    
+                with c2:
+                    st.warning("⚡ **รหัสตัวเลขสากล (Universal ID)**")
+                    st.metric("Wikidata QID", f"[{qid}]")
+                    st.caption("รหัสตัวเลขนี้หมายถึงสิ่งนี้เหมือนกันทั่วโลก")
+                    
+                with c3:
+                    st.success("📥 **ภาษาปลายทาง**")
+                    st.metric("คำแปลปลายทาง", translated_text)
+                    
+                st.divider()
+                st.write(f"💡 **หลักการ:** ไม่ว่าจะพิมพ์ภาษาไหนก็ตาม ระบบจะค้นหาว่าสิ่งนี้คือรหัสตัวเลข **{qid}** แล้วนำรหัส **{qid}** ไปดึงคำว่า **'{translated_text}'** ในภาษาปลายทางมาแสดงทันทีโดยไม่ผ่านการเดาความหมาย!")
             else:
-                st.markdown(f"🗣️ **คำอ่านออกเสียง:** {target_info.get('pron', '-')}")
-
-    else:
-        st.error("❌ ยังไม่มีคำนี้ในระบบต้นแบบ (ลองใช้คำว่า: สวัสดี, กาแฟ, ไป, ขอบคุณ)")
-
-# ตารางแสดงคลังข้อมูลสากล
-st.divider()
-st.subheader("📊 คลังรหัสความหมายสากล (Universal Concept Registry)")
-
-table_list = []
-for qid, item in UNIVERSAL_DATABASE.items():
-    table_list.append({
-        "Universal ID": f"[{qid}]",
-        "แนวคิดหลัก": item["concept"],
-        "🇹🇭 ไทย": item["data"]["th"]["word"],
-        "🇺🇸 อังกฤษ": item["data"]["en"]["word"],
-        "🤟 ภาษามือไทย": item["data"]["sign_tsl"]["word"],
-        "🤟 ภาษามือ ASL": item["data"]["sign_asl"]["word"]
-    })
-
-st.table(table_list)
+                st.error("❌ ไม่พบรหัสความหมายของคำนี้ กรุณาลองใช้คำอื่นหรือตรวจสอบคำผิด")
