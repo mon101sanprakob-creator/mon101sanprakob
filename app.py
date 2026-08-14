@@ -1,367 +1,319 @@
 import streamlit as st
-import datetime
-import math
+import sys
 import os
 import glob
-import urllib.request
-import json
-import random
-from streamlit_js_eval import get_geolocation
+import calendar
+import pandas as pd
+from datetime import datetime
 
-# ---------------------------------------------------------
-# 1. Page Configuration & Custom CSS (Neon Glossy Dark Theme)
-# ---------------------------------------------------------
-st.set_page_config(
-    page_title="อยู่นิ้งๆไม่เจ็บตัว",
-    page_icon="🔮",
-    layout="wide"
-)
+# บังคับให้ Python มองเห็น Root Path เสมอ
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 
-# Custom CSS ตกแต่งพื้นหลังดำเงา (Glossy Black) และโทนสีนีออนตามระบุ
-st.markdown("""
+# นำเข้าค่าคงที่และ Engine จากไฟล์ระบบ
+from engine.constants import WEEKDAYS_TH, MONTHS, ZODIAC, COLOR_PALETTE, ENTERTAINMENT_DISCLAIMER, PHI, SYNODIC_MONTH
+from engine.synapse_engine import SynapseEngine
+
+# ==========================================================
+# HELPER FUNCTIONS FOR CONVERSION
+# ==========================================================
+def get_lunar_phase_day(target_date):
+    if isinstance(target_date, datetime):
+        target_date = target_date.date()
+    base_date = datetime(2000, 1, 6).date()  
+    diff_days = (target_date - base_date).days
+    lunar_age = diff_days % SYNODIC_MONTH
+    lunar_day = int(lunar_age) + 1
+    return min(max(lunar_day, 1), 30)
+
+def get_thai_zodiac_code(year):
+    zodiac_order = ["ชวด", "ฉลู", "ขาล", "เถาะ", "มะโรง", "มะเส็ง", "มะเมีย", "มะแม", "วอก", "ระกา", "จอ", "กุน"]
+    base_year = 2000
+    index = (year - base_year + 4) % 12
+    zodiac_name = zodiac_order[index]
+    return ZODIAC.get(zodiac_name, 1), zodiac_name
+
+def parse_date_inputs(selected_date):
+    weekday_names_th = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"]
+    current_weekday_name = weekday_names_th[selected_date.weekday()]
+    auto_weekday_code = WEEKDAYS_TH.get(current_weekday_name, 1)
+    
+    thai_months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"]
+    current_month_name = thai_months[selected_date.month - 1]
+    auto_month_code = MONTHS.get(current_month_name, 1)
+    
+    auto_zodiac_code, display_zodiac_name = get_thai_zodiac_code(selected_date.year)
+    auto_lunar = get_lunar_phase_day(selected_date)
+    return {
+        "weekday": auto_weekday_code, "month": auto_month_code, "zodiac": auto_zodiac_code, "lunar": auto_lunar,
+        "display_weekday": current_weekday_name, "display_month": current_month_name, "display_zodiac": display_zodiac_name
+    }
+
+# ==========================================================
+# CONFIGURATION & NEON INTERFACE DESIGN
+# ==========================================================
+st.set_page_config(page_title="SYNAPSE", layout="centered")
+
+PRIMARY = COLOR_PALETTE.get('PRIMARY', '#00ccff')
+SECONDARY = COLOR_PALETTE.get('SECONDARY', '#00ff99')
+BG_DARK = COLOR_PALETTE.get('SURFACE', '#1a1c23')
+TEXT_COLOR = COLOR_PALETTE.get('TEXT_LIGHT', '#ffffff')
+
+st.markdown(f"""
 <style>
-    /* Background & Main Layout */
-    .stApp {
-        background: radial-gradient(circle at center, #121218 0%, #050508 100%);
+    .neon-lucky-card {{
+        background-color: #0d0e12;
+        padding: 18px;
+        border-radius: 12px;
+        text-align: center;
+        margin: 12px 0;
+    }}
+    .neon-text-primary {{
+        color: {PRIMARY};
+        text-shadow: 0 0 8px {PRIMARY};
+        font-weight: bold;
+    }}
+    .lucky-number-style {{
+        font-size: 42px;
+        font-weight: bold;
         color: #ffffff;
-        font-family: 'Sarabun', sans-serif;
-    }
-    
-    /* Neon Glow Custom Cards */
-    .neon-card {
-        background: linear-gradient(145deg, rgba(20, 20, 28, 0.9), rgba(10, 10, 15, 0.95));
-        border-radius: 16px;
-        padding: 22px;
-        margin-bottom: 20px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        backdrop-filter: blur(8px);
-    }
-    
-    /* Neon Borders */
-    .border-gold { border-top: 4px solid #FFD700; box-shadow: 0 -4px 15px rgba(255, 215, 0, 0.2); }
-    .border-red { border-top: 4px solid #FF3366; box-shadow: 0 -4px 15px rgba(255, 51, 102, 0.2); }
-    .border-blue { border-top: 4px solid #00F0FF; box-shadow: 0 -4px 15px rgba(0, 240, 255, 0.2); }
-    .border-green { border-top: 4px solid #39FF14; box-shadow: 0 -4px 15px rgba(57, 255, 20, 0.2); }
-    .border-purple { border-top: 4px solid #BF00FF; box-shadow: 0 -4px 15px rgba(191, 0, 255, 0.2); }
-    
-    /* Neon Text Highlights */
-    .text-gold { color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
-    .text-neon-blue { color: #00F0FF; text-shadow: 0 0 10px rgba(0, 240, 255, 0.5); }
-    .text-neon-green { color: #39FF14; text-shadow: 0 0 10px rgba(57, 255, 20, 0.5); }
-    .text-neon-red { color: #FF3366; text-shadow: 0 0 10px rgba(255, 51, 102, 0.5); }
-    .text-neon-purple { color: #BF00FF; text-shadow: 0 0 10px rgba(191, 0, 255, 0.5); }
-    
-    h1, h2, h3, h4 {
-        margin-top: 0;
-        font-weight: 600;
-    }
+        text-shadow: 0 0 10px #ffffff, 0 0 20px {SECONDARY};
+        letter-spacing: 5px;
+        margin-top: 5px;
+    }}
+    .stDateInput div[data-baseweb="input"] {{
+        border: 2px solid {PRIMARY};
+        box-shadow: 0 0 10px {PRIMARY};
+        background: {BG_DARK};
+    }}
 </style>
 """, unsafe_allow_html=True)
 
+# ==========================================================
+# HEADER & LOGO
+# ==========================================================
+if os.path.exists("logo1.png"):
+    st.image("logo1.png", width=120)
 
-# ---------------------------------------------------------
-# 2. Master Calculations & Helper Functions
-# ---------------------------------------------------------
-DAYS_TH = ["วันจันทร์", "วันอังคาร", "วันพุธ", "วันพฤหัสบดี", "วันศุกร์", "วันเสาร์", "วันอาทิตย์"]
-MONTHS_TH = [
-    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
-    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
-]
-ZODIAC_ANIMALS = [
-    "ปีชวด (หนู) 🐀", "ปีฉลู (วัว) 🐂", "ปีขาล (เสือ) 🐅", "ปีเถาะ (กระต่าย) 🐇",
-    "ปีมะโรง (งูใหญ่) 🐉", "ปีมะเส็ง (งูเล็ก) 🐍", "ปีมะเมีย (ม้า) 🐎", "ปีมะแม (แพะ) 🐐",
-    "ปีวอก (ลิง) 🐒", "ปีระกา (ไก่) 🐓", "ปีจอ (หมา) 🐕", "ปีกุน (หมู) 🐖"
-]
-ZODIAC_SIGNS = [
-    "ราศีเมษ", "ราศีพฤษภ", "ราศีเมถุน", "ราศีกรกฎ", 
-    "ราศีสิงห์", "ราศีกันย์", "ราศีตุลย์", "ราศีพิจิก", 
-    "ราศีธนู", "ราศีมังกร", "ราศีกุมภ์", "ราศีมีน"
-]
+st.markdown(f"<h1 style='margin-top:0;'>🧠 <span class='neon-text-primary'>SYNAPSE</span></h1>", unsafe_allow_html=True)
+st.caption("🌌 Sound & Visual PERSONAL & PAIR Therapy Resonance Engine")
 
-def get_thai_zodiac_animal(year_ce, month, day):
-    """คำนวณปีนักษัตรไทย (เปลี่ยนปีนักษัตรช่วงวันสงกรานต์ 13 เมษายน)"""
-    calc_year = year_ce
-    if month < 4 or (month == 4 and day < 13):
-        calc_year -= 1
-    index = (calc_year - 4) % 12
-    return ZODIAC_ANIMALS[index]
-
-def get_zodiac_and_element(day, month):
-    """คำนวณราศีสุริยคติและธาตุประจำช่วงวันเกิด/วันที่เลือก"""
-    if (month == 3 and day >= 21) or (month == 4 and day <= 19):
-        return "ราศีเมษ (Aries)", "ธาตุไฟ 🔥", "#FF3366"
-    elif (month == 4 and day >= 20) or (month == 5 and day <= 20):
-        return "ราศีพฤษภ (Taurus)", "ธาตุดิน 🌍", "#39FF14"
-    elif (month == 5 and day >= 21) or (month == 6 and day <= 20):
-        return "ราศีเมถุน (Gemini)", "ธาตุลม 💨", "#00F0FF"
-    elif (month == 6 and day >= 21) or (month == 7 and day <= 22):
-        return "ราศีกรกฎ (Cancer)", "ธาตุน้ำ 💧", "#BF00FF"
-    elif (month == 7 and day >= 23) or (month == 8 and day <= 22):
-        return "ราศีสิงห์ (Leo)", "ธาตุไฟ 🔥", "#FF3366"
-    elif (month == 8 and day >= 23) or (month == 9 and day <= 22):
-        return "ราศีกันย์ (Virgo)", "ธาตุดิน 🌍", "#39FF14"
-    elif (month == 9 and day >= 23) or (month == 10 and day <= 22):
-        return "ราศีตุลย์ (Libra)", "ธาตุลม 💨", "#00F0FF"
-    elif (month == 10 and day >= 23) or (month == 11 and day <= 21):
-        return "ราศีพิจิก (Scorpio)", "ธาตุน้ำ 💧", "#BF00FF"
-    elif (month == 11 and day >= 22) or (month == 12 and day <= 21):
-        return "ราศีธนู (Sagittarius)", "ธาตุไฟ 🔥", "#FF3366"
-    elif (month == 12 and day >= 22) or (month == 1 and day <= 19):
-        return "ราศีมังกร (Capricorn)", "ธาตุดิน 🌍", "#39FF14"
-    elif (month == 1 and day >= 20) or (month == 2 and day <= 18):
-        return "ราศีกุมภ์ (Aquarius)", "ธาตุลม 💨", "#00F0FF"
-    else:
-        return "ราศีมีน (Pisces)", "ธาตุน้ำ 💧", "#BF00FF"
-
-def get_thai_lunar_phase(date_obj):
-    """คำนวณข้างขึ้นข้างแรมปฏิทินจันทรคติไทยพร้อมระยะห่างทางดาราศาสตร์จริง"""
-    base_date = datetime.date(2000, 1, 1)  # แรม 10 ค่ำ เดือน 1
-    diff_days = (date_obj - base_date).days
-    
-    lunar_cycle = 29.53058882
-    current_day_in_cycle = (diff_days + 24.5) % lunar_cycle
-    
-    if current_day_in_cycle < 14.765:
-        kham = int(current_day_in_cycle) + 1
-        lunar_str = f"ขึ้น {min(kham, 15)} ค่ำ"
-        phase = "ช่วงจันทร์สว่าง (สุกกปักข์) 🌔"
-    else:
-        kham = int(current_day_in_cycle - 14.765) + 1
-        lunar_str = f"แรม {min(kham, 15)} ค่ำ"
-        phase = "ช่วงจันทร์มืด (กาฬปักข์) 🌘"
-        
-    jd = date_obj.toordinal() + 1721425
-    d = jd - 2451545.0
-    moon_dist = 384400 - 20900 * math.cos(math.radians((current_day_in_cycle / lunar_cycle) * 360))
-    sun_dist = 1.00014 - 0.01671 * math.cos(math.radians(357.529 + 0.98560028 * d))
-    
-    return lunar_str, phase, round(moon_dist, -2), round(sun_dist, 4)
-
-def get_real_planet_positions(date_obj):
-    """คำนวณตำแหน่งการโคจรจริงของดาวทั้ง 7 ดวงตามหลักดาราศาสตร์"""
-    jd = date_obj.toordinal() + 1721425
-    d = jd - 2451545.0
-    
-    l_sun = (280.460 + 0.9856474 * d) % 360
-    l_moon = (218.316 + 13.176396 * d) % 360
-    l_mars = (355.433 + 0.524033 * d) % 360
-    l_mercury = (252.251 + 4.092334 * d) % 360
-    l_jupiter = (34.351 + 0.083085 * d) % 360
-    l_venus = (181.979 + 1.602130 * d) % 360
-    l_saturn = (50.077 + 0.033444 * d) % 360
-    
-    planets = [
-        ("อาทิตย์ (1)", l_sun),
-        ("จันทร์ (2)", l_moon),
-        ("อังคาร (3)", l_mars),
-        ("พุธ (4)", l_mercury),
-        ("พฤหัสบดี (5)", l_jupiter),
-        ("ศุกร์ (6)", l_venus),
-        ("เสาร์ (7)", l_saturn)
-    ]
-    
-    results = []
-    for name, deg in planets:
-        z_idx = int(deg // 30)
-        z_deg = int(deg % 30)
-        results.append((name, f"สถิต{ZODIAC_SIGNS[z_idx]} ({z_deg}° องศา)"))
-    return results
-
-def get_weather_by_coords(lat, lon):
-    """ดึงข้อมูลสภาพอากาศสดจริงจากตำแหน่งละติจูดและลองจิจูดของโทรศัพท์"""
-    try:
-        url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true"
-        req = urllib.request.urlopen(url, timeout=3)
-        data = json.loads(req.read().decode('utf-8'))
-        cw = data.get("current_weather", {})
-        temp = cw.get("temperature", "--")
-        wind = cw.get("windspeed", "--")
-        return f"{temp} °C (ความเร็วลม {wind} km/h)"
-    except Exception:
-        return "ไม่สามารถดึงข้อมูลสภาพอากาศได้"
-
-def get_numerology_and_taksa(date_obj):
-    """คำนวณพลังงานรวม เลขมงคล สีมงคล ข้อปฏิบัติและข้อห้ามตามหลักตำราทักษาไทย"""
-    d_sum = sum(int(digit) for digit in date_obj.strftime("%Y%m%d"))
-    while d_sum > 9 and d_sum not in [11, 22, 33]:
-        d_sum = sum(int(digit) for digit in str(d_sum))
-        
-    energy_score = min(62 + (d_sum * 4), 99)
-    weekday = date_obj.weekday()
-    
-    taksa_info = [
-        # Monday
-        {"num": [2, 4, 7], "color": "เขียวนีออน / ขาว / เหลืองทอง", "do": "เจรจาติดต่อธุรกิจ งานขาย งานสร้างสรรค์ และการเข้าหาผู้ใหญ่", "dont": "การใช้อารมณ์ตัดสินปัญหา หรือโต้เถียงในเรื่องไร้สาระ"},
-        # Tuesday
-        {"num": [3, 5, 8], "color": "ชมพู / แดงนีออน / ดำเงา", "do": "ออกกำลังกาย ลงมือทำโครงการใหม่ที่ต้องใช้ความเด็ดขาด", "dont": "การค้ำประกัน ให้ผู้อื่นยืมเงิน หรือเสี่ยงโชคเกินตัว"},
-        # Wednesday
-        {"num": [4, 2, 6], "color": "เขียวนีออน / ม่วงนีออน / ฟ้า", "do": "การทำสัญญา ค้าขายออนไลน์ ประสานงาน และการเรียนรู้สิ่งใหม่", "dont": "การพูดโดยไม่คิด หรือการนินทาที่อาจนำภัยมาสู่ตน"},
-        # Thursday
-        {"num": [5, 1, 9], "color": "ทองคำ / ส้ม / แดง", "do": "ทำบุญ สวดมนต์ ปรึกษาผู้เชี่ยวชาญ และการวางแผนระยะยาว", "dont": "การลงทุนที่มีความเสี่ยงสูงโดยไร้การศึกษารายละเอียด"},
-        # Friday
-        {"num": [6, 3, 5], "color": "ฟ้า / น้ำเงินนีออน / ชมพู", "do": "งานศิลปะ การตกแต่งสถานที่ สร้างมิตรภาพ และการสังสรรค์", "dont": "การจับจ่ายใช้สอยฟุ่มเฟือยเกินงบประมาณที่วางไว้"},
-        # Saturday
-        {"num": [7, 8, 1], "color": "ม่วงนีออน / ดำเงา / น้ำเงิน", "do": "สะสางงานค้าง ซ่อมแซมบ้านเรือน และการจัดระเบียบชีวิต", "dont": "การวิตกกังวลมากเกินไป หรือการเริ่มงานใหญ่โดยไม่พร้อม"},
-        # Sunday
-        {"num": [1, 4, 9], "color": "แดงนีออน / ทองคำ / เขียว", "do": "การเสนอผลงาน เปิดตัวสินค้า แสดงความเป็นผู้นำ", "dont": "การทำตัวเด่นเกินไปจนก่อให้เกิดศัตรูโดยไม่รู้ตัว"}
-    ]
-    return energy_score, taksa_info[weekday]
-
-
-# ---------------------------------------------------------
-# 3. Main Header (Logo, Controls, Music Player)
-# ---------------------------------------------------------
-logo_col, title_col = st.columns([1, 4])
-with logo_col:
-    if os.path.exists("logo1.png"):
-        st.image("logo1.png", width=300)
-    else:
-        st.markdown("<h1 class='text-gold'>🔮</h1>", unsafe_allow_html=True)
-
-with title_col:
-    st.markdown("<h1 class='text-gold' style='margin-bottom:0;'>PERSONAL ASTRO CALENDAR</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color:#bbb;'>ปฏิทินพลังงานดวงดาว สภาพอากาศสดตามพิกัด GPS และมหาทักษาประจำวัน</p>", unsafe_allow_html=True)
-
-st.divider()
-
-# Main Controls Card
-st.markdown("<div class='neon-card border-gold'>", unsafe_allow_html=True)
-c_input1, c_input2 = st.columns([1, 1])
-
-with c_input1:
-    st.markdown("### 📅 เลือกวัน / เดือน / ปี")
-    selected_date = st.date_input(
-        "เลือกวันที่ต้องการดูข้อมูล (ย้อนหลังได้ตั้งแต่ พ.ศ. 2493 / ค.ศ. 1950)",
-        value=datetime.date.today(),
-        min_value=datetime.date(1950, 1, 1),
-        max_value=datetime.date(2100, 12, 31)
-    )
-
-with c_input2:
-    st.markdown("### 🎵 เครื่องเล่นเพลง MP3")
-    mp3_files = glob.glob("*.mp3")
-    if mp3_files:
-        selected_song = st.selectbox("เลือกเพลง MP3 ในโฟลเดอร์หลัก", mp3_files)
-        st.audio(selected_song)
-    else:
-        st.info("💡 นำไฟล์เพลง `.mp3` วางในโฟลเดอร์หลักโฟลเดอร์เดียวกับไฟล์ `.py` เพื่อเล่นเพลงได้ทันที")
-
-# ดึงพิกัด GPS จริงจากมือถือผู้ใช้
+st.info(ENTERTAINMENT_DISCLAIMER)
 st.markdown("---")
-st.markdown("<b>📍 พิกัดตำแหน่งจริงจากโทรศัพท์มือถือของคุณ:</b>", unsafe_allow_html=True)
-location = get_geolocation()
 
-if location and 'coords' in location:
-    lat = location['coords']['latitude']
-    lon = location['coords']['longitude']
-    st.success(f"เชื่อมต่อพิกัดโทรศัพท์สำเร็จ: ละติจูด {lat:.4f}, ลองจิจูด {lon:.4f}")
-    weather_info = get_weather_by_coords(lat, lon)
-else:
-    lat, lon = 13.7563, 100.5018  # Default พิกัดกรุงเทพฯ
-    st.warning("⚠️ หากต้องการรับข้อมูลสภาพอากาศสดตามตำแหน่งของคุณ กรุณากดอนุญาตการเข้าถึง GPS บนโทรศัพท์มือถือ")
-    weather_info = get_weather_by_coords(lat, lon)
+tab1, tab2 = st.tabs(["🧬 วิเคราะห์พิกัดบุคคลหลัก", "🔮 พยากรณ์ตารางพลังงานรายเดือน"])
 
-st.markdown("</div>", unsafe_allow_html=True)
+# ==========================================================
+# แท็บที่ 1: บุคคลหลัก (และส่วนเสริมบุคคลที่ 2 แบบเลือกได้)
+# ==========================================================
+with tab1:
+    st.subheader("📅 ระบุพิกัดเวลาเกิดหลัก (Main User Integration)")
+    
+    st.markdown(f"<p style='color:{PRIMARY}; font-weight:bold; margin-bottom:0;'>🎁 พิกัดตัวคุณ (บุคคลหลัก)</p>", unsafe_allow_html=True)
+    selected_date1 = st.date_input(
+        "วันเกิดของคุณ:",
+        value=datetime(2000, 1, 1),
+        min_value=datetime(1960, 1, 1),
+        max_value=datetime(2026, 12, 31),
+        key="date1"
+    )
+    
+    enable_pair = st.checkbox("🔗 เปิดโหมดคำนวณคู่สมพงษ์ร่วมด้วย (เปิดเฉพาะบางกรณี)", value=False)
+    
+    selected_date2 = None
+    if enable_pair:
+        st.markdown(f"<p style='color:#ff00ff; font-weight:bold; margin-bottom:0;'>🔗 พิกัดบุคคลที่สอง (ส่วนเสริมคู่สมพงษ์)</p>", unsafe_allow_html=True)
+        selected_date2 = st.date_input(
+            "วันเกิดบุคคลที่สอง:",
+            value=datetime(2000, 1, 10),
+            min_value=datetime(1960, 1, 1),
+            max_value=datetime(2026, 12, 31),
+            key="date2"
+        )
+        
+    st.markdown("---")
+    
+    if st.button("🧬 เริ่มต้นระบบประมวลผลสัญญาณคลื่น", use_container_width=True):
+        with st.spinner("⚡ กำลังถอดรหัสและผสานสัญญาณพลังงาน..."):
+            try:
+                engine = SynapseEngine()
+                data1 = parse_date_inputs(selected_date1)
+                result1 = engine.calculate(data1["weekday"], data1["month"], data1["zodiac"], data1["lunar"])
+                freq1 = result1.get('frequency', 0.0)
+                
+                st.success("✨ ถอดรหัสคลื่นพลังงานเฉพาะบุคคลหลักเสร็จสิ้น!")
+                
+                lucky_three_1 = str(int(abs(result1['total'] * PHI)) % 900 + 100)
+                lucky_two_1 = str(int(abs(result1['energy'] * freq1)) % 90 + 10).zfill(2)
+                
+                st.markdown(f"""
+                <div class="neon-lucky-card" style="border: 2px solid {PRIMARY}; box-shadow: 0 0 15px {PRIMARY};">
+                    <h3 style='color:{PRIMARY}; margin:0;'>📊 ผลลัพธ์ความถี่บุคคลหลัก: <span style='color:#fff;'>{freq1:.4f} Hz</span></h3>
+                    <p style='font-size:13px; color:#888;'>รหัสฐาน: วัน {data1['display_weekday']} | เดือน {data1['display_month']} | ปี {data1['display_zodiac']} | ดิถีที่ ({data1['lunar']})</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                st.write("🧬 **รหัสสัญญาณคลื่นนำโชคประจำพิกัด (Quantum Number Decryption):**")
+                col_num1, col_num2 = st.columns(2)
+                with col_num1:
+                    st.markdown(f"""
+                    <div class="neon-lucky-card" style="border: 2px dashed {PRIMARY}; box-shadow: 0 0 10px {PRIMARY};">
+                        <span style="color:{PRIMARY}; font-size:12px; font-weight:bold; letter-spacing:1px;">🔺 TRI-RESONANCE MATRIX</span>
+                        <div class="lucky-number-style" style="text-shadow: 0 0 10px #ffffff, 0 0 20px {PRIMARY};">{lucky_three_1}</div>
+                        <span style="color:#888888; font-size:10px; display:block; margin-top:5px;">*รหัสเชื่อมต่อสนามพลังงาน 3 มิติเฉพาะบุคคล</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col_num2:
+                    st.markdown(f"""
+                    <div class="neon-lucky-card" style="border: 2px dashed {SECONDARY}; box-shadow: 0 0 10px {SECONDARY};">
+                        <span style="color:{SECONDARY}; font-size:12px; font-weight:bold; letter-spacing:1px;">🔹 BINARY QUANTUM CORE</span>
+                        <div class="lucky-number-style" style="text-shadow: 0 0 10px #ffffff, 0 0 20px {SECONDARY};">{lucky_two_1}</div>
+                        <span style="color:#888888; font-size:10px; display:block; margin-top:5px;">*รหัสประจุพลังงานควอนตัมคู่ประจำฐานเวลา</span>
+                    </div>
+                    """, unsafe_allow_html=True)
 
+                # แสดงข้อมูลดิบ JSON บนหน้าแรกทันที
+                with st.expander("🔍 ตรวจสอบโครงสร้างระบบดิบบุคคลหลัก (Main User JSON Metadata)", expanded=True):
+                    st.json({
+                        "user_inputs": data1,
+                        "engine_calculations": result1,
+                        "quantum_codes": {
+                            "tri_resonance_matrix": lucky_three_1,
+                            "binary_quantum_core": lucky_two_1
+                        }
+                    })
 
-# ---------------------------------------------------------
-# 4. Processing Output Data
-# ---------------------------------------------------------
-year_ce = selected_date.year
-year_be = year_ce + 543
-month_name = MONTHS_TH[selected_date.month - 1]
-day_name = DAYS_TH[selected_date.weekday()]
-day_num = selected_date.day
+                # ทำงานของบุคคลที่สองเสริมขึ้นมา (เฉพาะกรณีที่เลือกโหมดคู่)
+                if enable_pair and selected_date2 is not None:
+                    st.markdown("---")
+                    st.subheader("🔗 ผลวิเคราะห์การสะท้อนพ้องร่วมกับบุคคลที่สอง (Pair Integration Mode)")
+                    
+                    data2 = parse_date_inputs(selected_date2)
+                    result2 = engine.calculate(data2["weekday"], data2["month"], data2["zodiac"], data2["lunar"])
+                    freq2 = result2.get('frequency', 0.0)
+                    
+                    diff_percent = abs(freq1 - freq2) / max(freq1, freq2) * 100
+                    ratio = max(freq1, freq2) / min(freq1, freq2)
+                    is_phi_match = abs(ratio - 1.618034) < 0.016  
+                    
+                    match_score = 0
+                    match_status = ""
+                    match_color = ""
+                    
+                    if is_phi_match:
+                        match_status = "🏆 Cosmic Soulmates (คู่แท้บุพเพสันนิวาสแห่งจักรวาล)"
+                        match_color = "#ffd700"
+                        match_score = 100
+                    elif diff_percent <= 2.5:
+                        match_status = "🟢 Perfect Resonance (คู่มิตรแท้ส่งเสริมกัน)"
+                        match_color = SECONDARY
+                        match_score = int(100 - (diff_percent * 4))  
+                    elif diff_percent <= 7.5:
+                        match_status = "🟡 Harmonic Balance (คู่พันธมิตรปลอดภัย)"
+                        match_color = PRIMARY
+                        match_score = int(90 - (diff_percent * 3))
+                    elif diff_percent <= 15.0:
+                        match_status = "🔵 Dynamic Friction (คู่เหวี่ยงท้าทาย)"
+                        match_color = "#ff00ff"
+                        match_score = int(70 - (diff_percent * 2))
+                    else:
+                        match_status = "🔴 Dissonance Wave (คู่อริหักล้างรุนแรง)"
+                        match_color = "#ff3333"
+                        match_score = max(10, int(40 - (diff_percent * 0.5)))
+                        
+                    st.markdown(f"""
+                    <div class="neon-lucky-card" style="border: 3px double {match_color}; box-shadow: 0 0 20px {match_color};">
+                        <span style="color:#fff; font-size:12px; letter-spacing: 2px;">SYNAPSE PAIR STATUS</span>
+                        <div style="color:{match_color}; font-size:26px; font-weight:bold; text-shadow: 0 0 10px #ffffff, 0 0 20px {match_color}; margin: 8px 0;">
+                            {match_status}
+                        </div>
+                        <span style="color:#ffffff;">💯 คะแนนสมดุล: <span style="font-size:24px; font-weight:bold; color:{match_color};">{match_score}%</span> (ต่างกัน {diff_percent:.2f}%)</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    def get_neon_shape(calc_total, recommended_freq):
+                        shape_index = int(abs(calc_total * recommended_freq)) % 4
+                        if shape_index == 0: return "border-radius: 50%;"
+                        elif shape_index == 1: return "border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;"
+                        elif shape_index == 2: return "border-radius: 0%; transform: rotate(45deg); max-width: 90px; max-height: 90px; margin: 10px;"
+                        else: return "border-radius: 50% 50% 0% 0% / 40% 40% 0% 0%;"
+                    
+                    shape1_style = get_neon_shape(result1['total'], freq1)
+                    shape2_style = get_neon_shape(result2['total'], freq2)
+                    
+                    st.markdown(f"""
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0d0e12; padding: 30px; border-radius: 12px; border: 1px solid #222; margin: 15px 0;">
+                        <div style="position: relative; width: 130px; height: 130px; display: flex; align-items: center; justify-content: center;">
+                            <div style="position: absolute; width: 120px; height: 120px; border: 4px double {PRIMARY}; box-shadow: 0 0 15px {PRIMARY}; {shape1_style}"></div>
+                            <div style="position: absolute; width: 90px; height: 90px; border: 4px double #ff00ff; box-shadow: 0 0 15px #ff00ff; opacity: 0.8; {shape2_style}"></div>
+                        </div>
+                        <div style="font-size:12px; margin-top:15px; color:#888;">คุณ ({freq1:.2f} Hz) ⚡ คู่ของคุณ ({freq2:.2f} Hz)</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                # โหลดเพลงบำบัดประจำพิกัด
+                my_playlist = glob.glob("*.mp3")
+                if len(my_playlist) > 0:
+                    my_playlist.sort()
+                    if enable_pair and selected_date2 is not None:
+                        playlist_index = int(abs(result1['total'] + result2['total']) * (freq1 + freq2)) % len(my_playlist)
+                    else:
+                        playlist_index = int(abs(result1['total'] * PHI)) % len(my_playlist)
+                    
+                    st.write("🎵 **บทเพลงบำบัดคลื่นเสียงเฉพาะพิกัด (Personalized Audio Therapy):**")
+                    st.audio(my_playlist[playlist_index], format="audio/mp3")
+                    st.caption(f"✨ *จัดสรรบทเพลงคัดพิเศษ `{my_playlist[playlist_index]}` เพื่อปรับความเสถียรของคลื่น*")
+                    
+            except Exception as e:
+                st.error(f"เกิดข้อผิดพลาดในการประมวลผลสัญญาณ: {str(e)}")
 
-zodiac_animal = get_thai_zodiac_animal(year_ce, selected_date.month, day_num)
-zodiac_name, element_name, element_color = get_zodiac_and_element(day_num, selected_date.month)
-lunar_day, moon_phase, moon_dist, sun_dist = get_thai_lunar_phase(selected_date)
-planet_positions = get_real_planet_positions(selected_date)
-energy_score, taksa = get_numerology_and_taksa(selected_date)
-
-
-# ---------------------------------------------------------
-# 5. Full Dashboard Layout Display (หน้าหลักทั้งหมด)
-# ---------------------------------------------------------
-
-# Row 1: วันสุริยคติ, ปีนักษัตร, สภาพอากาศ & ราศี, ธาตุ, ค่าพลังงาน
-row1_col1, row1_col2 = st.columns(2)
-
-with row1_col1:
-    st.markdown(f"""
-    <div class="neon-card border-gold">
-        <h3 class="text-gold">📆 ข้อมูลวันทางสุริยคติ & ปีนักษัตร</h3>
-        <p><b>วันประจำสัปดาห์:</b> <span class="text-gold" style="font-size:1.2em; font-weight:bold;">{day_name}</span></p>
-        <p><b>วันที่:</b> {day_num} {month_name}</p>
-        <p><b>ปี พ.ศ.:</b> <span class="text-neon-blue">{year_be}</span> | <b>ปี ค.ศ.:</b> <span class="text-neon-blue">{year_ce}</span></p>
-        <p><b>ปีนักษัตรไทย:</b> <span class="text-neon-green" style="font-size:1.2em; font-weight:bold;">{zodiac_animal}</span></p>
-        <p><b>🌤️ สภาพอากาศสดจริงตามพิกัด:</b> {weather_info}</p>
-        <p><b>เวลาอัปเดตระบบปัจจุบัน:</b> {datetime.datetime.now().strftime('%H:%M:%S')} น.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-with row1_col2:
-    st.markdown(f"""
-    <div class="neon-card border-purple">
-        <h3 class="text-neon-purple">♈ ราศี ธาตุ & ค่าพลังงานสิริมงคล</h3>
-        <p><b>ราศีประจำช่วงวัน:</b> <span style="color:{element_color}; font-weight:bold; font-size:1.18em;">{zodiac_name}</span></p>
-        <p><b>ธาตุประจำราศี:</b> {element_name}</p>
-        <p><b>ค่าพลังงานสิริมงคลรวมประจำวัน (เลขศาสตร์):</b></p>
-        <h2 class="text-neon-green" style="margin:0;">{energy_score} / 100 %</h2>
-    </div>
-    """, unsafe_allow_html=True)
-
-# Row 2: ดวงจันทร์ (จันทรคติไทย) & ดวงอาทิตย์
-row2_col1, row2_col2 = st.columns(2)
-
-with row2_col1:
-    st.markdown(f"""
-    <div class="neon-card border-blue">
-        <h3 class="text-neon-blue">🌙 ข้างขึ้นข้างแรม (ปฏิทินไทย)</h3>
-        <p><b>ปฏิทินจันทรคติไทย:</b> <span class="text-neon-blue" style="font-size:1.2em; font-weight:bold;">{lunar_day}</span></p>
-        <p><b>ปรากฏการณ์ดวงจันทร์:</b> {moon_phase}</p>
-        <p><b>ระยะห่างจากโลกถึงดวงจันทร์:</b> {moon_dist:,} กิโลเมตร</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-with row2_col2:
-    st.markdown(f"""
-    <div class="neon-card border-red">
-        <h3 class="text-neon-red">☀️ ระยะห่างดวงอาทิตย์</h3>
-        <p><b>ระยะห่างจากโลกถึงดวงอาทิตย์:</b> {sun_dist} AU (หน่วยดาราศาสตร์)</p>
-        <p><b>คำนวณระยะทางกิโลเมตร:</b> {round(sun_dist * 149597870.7):,} กม.</p>
-        <p><b>สถานะพลังงานแสงอาทิตย์:</b> สมบูรณ์ตามตำแหน่งวงโคจรทางดาราศาสตร์</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-# Row 3: ตำแหน่งและการโคจรของดาวทั้ง 7 ดวง
-st.markdown("""
-<div class="neon-card border-green">
-    <h3 class="text-neon-green">🪐 ตำแหน่งและการโคจรของดาวทั้ง 7 ดวง (คำนวณจริงทางดาราศาสตร์)</h3>
-    <p style='color:#aaa; font-size:0.9em; margin-bottom:15px;'>พิกัดการสถิตราศีและองศาของดวงดาวประจำวันที่เลือก</p>
-""", unsafe_allow_html=True)
-
-cols_p = st.columns(4)
-for idx, (p_name, p_pos) in enumerate(planet_positions):
-    with cols_p[idx % 4]:
-        st.markdown(f"**{p_name}**  \n<span style='color:#39FF14; font-size:0.95em;'>{p_pos}</span>", unsafe_allow_html=True)
-
-st.markdown("</div>", unsafe_allow_html=True)
-
-# Row 4: เลขนำโชค สีมงคล สิ่งที่ควรปฏิบัติ & สิ่งที่ไม่ควรทำ
-st.markdown(f"""
-<div class="neon-card border-gold">
-    <h3 class="text-gold">🔮 เลขนำโชค สีมงคล & ข้อปฏิบัติ (ตำรามหาทักษา)</h3>
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap:20px;">
-        <div style="flex: 1; min-width: 250px;">
-            <p><b>เลขนำโชคประจำวัน:</b> <span class="text-neon-green" style="font-size: 1.4em; font-weight:bold;">{taksa['num'][0]}, {taksa['num'][1]}, {taksa['num'][2]}</span></p>
-            <p><b>สีมงคลเสริมพลังงาน:</b> <span class="text-gold" style="font-weight:bold;">{taksa['color']}</span></p>
-        </div>
-        <div style="flex: 2; min-width: 300px;">
-            <p><span class="text-neon-green"><b>✅ สิ่งที่ควรปฏิบัติ:</b></span> {taksa['do']}</p>
-            <p><span class="text-neon-red"><b>❌ สิ่งที่ไม่ควรทำ:</b></span> {taksa['dont']}</p>
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+# ==========================================================
+# แท็บที่ 2: โหมดปฏิทินพยากรณ์คลื่นรายเดือน (อ้างอิงบุคคลหลัก)
+# ==========================================================
+with tab2:
+    st.subheader("🔮 เครื่องพยากรณ์คลื่นพลังงานรายเดือน (Monthly Cyber Rhythm)")
+    st.caption("ระบบวนลูปคำนวณสเกลเวลาในอนาคตและอดีต เพื่อพยากรณ์ความเบาสบายของบุคคลหลักรายวัน")
+    
+    col_sel1, col_sel2 = st.columns(2)
+    with col_sel1:
+        view_year = st.selectbox("เลือกปีที่ต้องการดู (ย้อนได้ถึง 1960):", range(1960, 2031), index=datetime.now().year - 1960)
+    with col_sel2:
+        view_month = st.selectbox("เลือกเดือนที่ต้องการดู:", range(1, 13), index=datetime.now().month - 1)
+        
+    if st.button("📊 เจนเนอเรตตารางสภาพคลื่นรายเดือน", use_container_width=True):
+        with st.spinner("⏳ กำลังจำลองฐานมิติเวลา..."):
+            try:
+                engine = SynapseEngine()
+                num_days = calendar.monthrange(view_year, view_month)[1]
+                calendar_data = []
+                
+                for day in range(1, num_days + 1):
+                    loop_date = datetime(view_year, view_month, day).date()
+                    loop_data = parse_date_inputs(loop_date)
+                    
+                    res = engine.calculate(loop_data["weekday"], loop_data["month"], loop_data["zodiac"], loop_data["lunar"])
+                    f_val = res.get('frequency', 0.0)
+                    
+                    metric_check = int(abs(res['total'] * f_val)) % 3
+                    if metric_check == 0:
+                        status = "🟢 เบาสบาย สมองปลอดโปร่ง (Healing Day)"
+                    elif metric_check == 1:
+                        status = "🟡 นิ่งมั่นคง พลังงานปกติ (Stable Day)"
+                    else:
+                        status = "🔴 หนักหน่วง/ท้าทาย ควรระวัง (High Friction Day)"
+                        
+                    calendar_data.append({
+                        "วันที่": f"{day:02d}/{view_month:02d}/{view_year}",
+                        "วัน": loop_data["display_weekday"],
+                        "ความถี่คลื่น (Hz)": f"{f_val:.4f} Hz",
+                        "ข้างขึ้นข้างแรม": f"วันจันทรคติที่ {loop_data['lunar']}",
+                        "สภาพคลื่นพลังงานรายวัน": status
+                    })
+                
+                df = pd.DataFrame(calendar_data)
+                st.success(f"📈 เจนเนอเรตแผนผังพลังงานประจำเดือน {view_month}/{view_year} สำเร็จ!")
+                st.dataframe(df, use_container_width=True, hide_index=True)
+                
+            except Exception as e:
+                st.error(f"ไม่สามารถประมวลผลปฏิทินได้: {str(e)}")
