@@ -1,13 +1,8 @@
 import streamlit as st
-import folium
-from streamlit_folium import st_folium
-from math import radians, sin, cos, sqrt, atan2
+import streamlit.components.v1 as components
 
-# =========================================================
-# ตั้งค่าหน้าแอป
-# =========================================================
 st.set_page_config(
-    page_title="เครื่องมือวัดพื้นที่นา",
+    page_title="🚜 เครื่องมือวัดพื้นที่นา",
     page_icon="🚜",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -16,192 +11,67 @@ st.set_page_config(
 # =========================================================
 # ราคาค่าบริการ
 # =========================================================
-PLOW_PRICE = 250       # ไถนา บาท/ไร่
-ROTARY_PRICE = 350     # ปั่นดิน บาท/ไร่
+PLOW_PRICE = 250
+ROTARY_PRICE = 350
 
 # =========================================================
-# CSS สำหรับมือถือ
+# CSS
 # =========================================================
 st.markdown("""
 <style>
-    .main {
-        padding-top: 10px;
-    }
+html, body, [class*="css"] {
+    font-family: sans-serif;
+}
 
+.block-container {
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+    max-width: 1200px;
+    margin: auto;
+}
+
+.title {
+    text-align: center;
+    font-size: 30px;
+    font-weight: 800;
+}
+
+.subtitle {
+    text-align: center;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.info-box {
+    background: #f4f7f8;
+    border-radius: 14px;
+    padding: 15px;
+    margin-top: 10px;
+}
+
+.money-box {
+    background: #eef8ee;
+    border: 2px solid #55a655;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+}
+
+.money {
+    font-size: 32px;
+    font-weight: 800;
+}
+
+@media (max-width: 700px) {
     .title {
-        font-size: 32px;
-        font-weight: 800;
-        text-align: center;
-        margin-bottom: 5px;
-    }
-
-    .subtitle {
-        text-align: center;
-        color: #666;
-        margin-bottom: 20px;
-    }
-
-    .result-box {
-        padding: 18px;
-        border-radius: 15px;
-        background: #f5f7f8;
-        border: 1px solid #ddd;
-        margin-top: 10px;
-        margin-bottom: 10px;
-    }
-
-    .big-number {
-        font-size: 30px;
-        font-weight: bold;
-        text-align: center;
+        font-size: 24px;
     }
 
     .money {
-        font-size: 28px;
-        font-weight: bold;
-        text-align: center;
-    }
-
-    div.stButton > button {
-        width: 100%;
-        min-height: 48px;
-        font-size: 18px;
-        font-weight: bold;
-        border-radius: 12px;
-    }
-
-    @media (max-width: 768px) {
-        .title {
-            font-size: 25px;
-        }
-
-        .big-number {
-            font-size: 25px;
-        }
-
-        .money {
-            font-size: 24px;
-        }
+        font-size: 26px;
     }
 </style>
 """, unsafe_allow_html=True)
-
-
-# =========================================================
-# Session State
-# =========================================================
-if "points" not in st.session_state:
-    st.session_state.points = []
-
-if "measuring" not in st.session_state:
-    st.session_state.measuring = False
-
-if "map_center" not in st.session_state:
-    st.session_state.map_center = [16.0538, 103.6520]
-
-
-# =========================================================
-# ฟังก์ชันคำนวณระยะทางบนโลก
-# =========================================================
-def distance_m(lat1, lon1, lat2, lon2):
-    """
-    ระยะทางระหว่างจุด GPS หน่วยเมตร
-    Haversine formula
-    """
-    R = 6371000
-
-    lat1 = radians(lat1)
-    lat2 = radians(lat2)
-
-    dlat = radians(lat2 - lat1)
-    dlon = radians(lon2 - lon1)
-
-    a = (
-        sin(dlat / 2) ** 2
-        + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
-    )
-
-    c = 2 * atan2(sqrt(a), sqrt(1 - a))
-
-    return R * c
-
-
-# =========================================================
-# คำนวณพื้นที่ Polygon
-# =========================================================
-def polygon_area_m2(points):
-    """
-    คำนวณพื้นที่รูปหลายเหลี่ยมบนโลก
-    ใช้พิกัดละติจูด/ลองจิจูดประมาณการเป็นพื้นที่ m²
-    """
-
-    if len(points) < 3:
-        return 0
-
-    # หาค่าเฉลี่ย latitude
-    avg_lat = sum(p[0] for p in points) / len(points)
-
-    # แปลงพิกัดเป็นเมตรโดยประมาณ
-    lat_meter = 111320
-    lon_meter = 111320 * cos(radians(avg_lat))
-
-    xy = []
-
-    for lat, lon in points:
-        x = lon * lon_meter
-        y = lat * lat_meter
-        xy.append((x, y))
-
-    area = 0
-
-    for i in range(len(xy)):
-        x1, y1 = xy[i]
-        x2, y2 = xy[(i + 1) % len(xy)]
-
-        area += (x1 * y2) - (x2 * y1)
-
-    return abs(area) / 2
-
-
-# =========================================================
-# แปลง m² → ไร่ งาน ตารางวา
-# =========================================================
-def convert_area(area_m2):
-
-    # 1 ไร่ = 1600 ตารางเมตร
-    # 1 งาน = 400 ตารางเมตร
-    # 1 ตารางวา = 4 ตารางเมตร
-
-    total_square_wah = area_m2 / 4
-
-    rai = int(total_square_wah // 400)
-
-    remaining_wah = total_square_wah - (rai * 400)
-
-    ngan = int(remaining_wah // 100)
-
-    square_wah = remaining_wah - (ngan * 100)
-
-    rai_decimal = area_m2 / 1600
-
-    return rai, ngan, square_wah, rai_decimal
-
-
-# =========================================================
-# คำนวณราคา
-# =========================================================
-def calculate_price(rai_decimal, service):
-
-    if service == "ไถนา":
-        return rai_decimal * PLOW_PRICE
-
-    if service == "ปั่นดิน":
-        return rai_decimal * ROTARY_PRICE
-
-    if service == "ไถนา + ปั่นดิน":
-        return rai_decimal * (PLOW_PRICE + ROTARY_PRICE)
-
-    return 0
 
 
 # =========================================================
@@ -213,382 +83,641 @@ st.markdown(
 )
 
 st.markdown(
-    '<div class="subtitle">วัดแปลงนา • คำนวณไร่/งาน/ตารางวา • คิดค่าจ้าง</div>',
+    '<div class="subtitle">GPS • ภาพดาวเทียม • วัดไร่/งาน/ตารางวา • คิดค่าจ้าง</div>',
     unsafe_allow_html=True
 )
 
 
 # =========================================================
-# ปุ่มควบคุม
+# JavaScript + Leaflet
 # =========================================================
-col1, col2 = st.columns(2)
+html_code = f"""
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<link rel="stylesheet"
+      href="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.18.0/dist/leaflet-geoman.css"/>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.18.0/dist/leaflet-geoman.min.js"></script>
+
+<style>
+
+html, body {{
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}}
+
+#map {{
+    width: 100%;
+    height: 650px;
+    border-radius: 15px;
+}}
+
+.gps-box {{
+    position: absolute;
+    z-index: 9999;
+    top: 10px;
+    left: 50px;
+    background: white;
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    font-size: 13px;
+}}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="map"></div>
+
+<div class="gps-box">
+    📍 <b>ตำแหน่งปัจจุบัน</b>
+    <div id="gps">กำลังค้นหาตำแหน่ง...</div>
+</div>
+
+<script>
+
+let map;
+let currentMarker = null;
+let accuracyCircle = null;
+
+let farmLayer = null;
+
+
+// ========================================================
+// เริ่มแผนที่
+// ========================================================
+
+map = L.map('map', {{
+    zoomControl: true
+}}).setView([16.0538, 103.6520], 15);
+
+
+// ========================================================
+// ภาพดาวเทียม
+// ========================================================
+
+L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{{z}}/{{y}}/{{x}}',
+    {{
+        maxZoom: 20,
+        attribution: 'Tiles © Esri'
+    }}
+).addTo(map);
+
+
+// ========================================================
+// แผนที่ถนน
+// ========================================================
+
+let roadLayer = L.tileLayer(
+    'https://{{s}}.tile.openstreetmap.org/{{z}}/{{y}}/{{x}}.png',
+    {{
+        maxZoom: 20,
+        attribution: '© OpenStreetMap'
+    }}
+);
+
+
+// ========================================================
+// Layer Control
+// ========================================================
+
+let satellite = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{{z}}/{{y}}/{{x}}',
+    {{
+        maxZoom: 20
+    }}
+);
+
+let baseMaps = {{
+    "🛰️ ดาวเทียม": satellite,
+    "🗺️ แผนที่ถนน": roadLayer
+}};
+
+L.control.layers(baseMaps).addTo(map);
+
+
+// ========================================================
+// GPS
+// ========================================================
+
+function startGPS() {{
+
+    if (!navigator.geolocation) {{
+
+        document.getElementById("gps").innerHTML =
+            "โทรศัพท์/เบราว์เซอร์ไม่รองรับ GPS";
+
+        return;
+    }}
+
+    navigator.geolocation.watchPosition(
+
+        function(position) {{
+
+            let lat = position.coords.latitude;
+            let lon = position.coords.longitude;
+
+            let accuracy = position.coords.accuracy;
+
+            document.getElementById("gps").innerHTML =
+                "Lat: " + lat.toFixed(7) +
+                "<br>Lng: " + lon.toFixed(7) +
+                "<br>ความแม่นยำ ±" +
+                accuracy.toFixed(1) + " ม.";
+
+            if (currentMarker) {{
+
+                currentMarker.setLatLng([lat, lon]);
+
+            }} else {{
+
+                currentMarker = L.marker(
+                    [lat, lon],
+                    {{
+                        title: "ตำแหน่งของฉัน"
+                    }}
+                ).addTo(map);
+
+                currentMarker.bindPopup(
+                    "<b>📍 ตำแหน่งของฉัน</b><br>" +
+                    "Lat: " + lat.toFixed(7) +
+                    "<br>Lng: " + lon.toFixed(7) +
+                    "<br>Accuracy ±" +
+                    accuracy.toFixed(1) + " m"
+                );
+
+                map.setView(
+                    [lat, lon],
+                    18
+                );
+            }}
+
+
+            if (accuracyCircle) {{
+
+                accuracyCircle.setLatLng(
+                    [lat, lon]
+                );
+
+                accuracyCircle.setRadius(
+                    accuracy
+                );
+
+            }} else {{
+
+                accuracyCircle =
+                    L.circle(
+                        [lat, lon],
+                        {{
+                            radius: accuracy,
+                            color: "#0066ff",
+                            fillColor: "#3388ff",
+                            fillOpacity: 0.12
+                        }}
+                    ).addTo(map);
+
+            }}
+
+        },
+
+        function(error) {{
+
+            let message = "";
+
+            if (error.code === 1) {{
+                message =
+                    "ไม่ได้อนุญาตให้ใช้ตำแหน่ง";
+            }}
+
+            else if (error.code === 2) {{
+                message =
+                    "ไม่สามารถหาตำแหน่งได้";
+            }}
+
+            else if (error.code === 3) {{
+                message =
+                    "GPS ใช้เวลานานเกินไป";
+            }}
+
+            document.getElementById("gps").innerHTML =
+                message;
+
+        }},
+
+        {{
+            enableHighAccuracy: true,
+            maximumAge: 1000,
+            timeout: 10000
+        }}
+
+    );
+
+}}
+
+
+startGPS();
+
+
+// ========================================================
+// Geoman
+// ========================================================
+
+map.pm.addControls({{
+
+    position: 'topleft',
+
+    drawMarker: false,
+    drawCircle: false,
+    drawCircleMarker: false,
+    drawPolyline: false,
+    drawRectangle: false,
+
+    drawPolygon: true,
+
+    editMode: true,
+    dragMode: false,
+    cutPolygon: false,
+    removalMode: true
+
+}});
+
+
+// ========================================================
+// เมื่อสร้างพื้นที่
+// ========================================================
+
+map.on(
+    'pm:create',
+    function(e) {{
+
+        if (farmLayer) {{
+            map.removeLayer(farmLayer);
+        }}
+
+        farmLayer = e.layer;
+
+        farmLayer.setStyle({{
+            color: '#ff0000',
+            weight: 4,
+            fillColor: '#ff0000',
+            fillOpacity: 0.20
+        }});
+
+        calculateArea();
+
+        farmLayer.on(
+            'pm:edit',
+            function() {{
+                calculateArea();
+            }}
+        );
+
+    }}
+);
+
+
+// ========================================================
+// คำนวณพื้นที่
+// ========================================================
+
+function calculateArea() {{
+
+    if (!farmLayer) return;
+
+    let latlngs =
+        farmLayer.getLatLngs()[0];
+
+    if (latlngs.length < 3) return;
+
+
+    // ====================================================
+    // แปลง lat/lng เป็นเมตรโดยประมาณ
+    // ====================================================
+
+    let avgLat = 0;
+
+    latlngs.forEach(function(p) {{
+        avgLat += p.lat;
+    }});
+
+    avgLat =
+        avgLat / latlngs.length;
+
+
+    let latMeter = 111320;
+
+    let lonMeter =
+        111320 *
+        Math.cos(
+            avgLat *
+            Math.PI / 180
+        );
+
+
+    let xy = [];
+
+    latlngs.forEach(function(p) {{
+
+        xy.push({{
+            x: p.lng * lonMeter,
+            y: p.lat * latMeter
+        }});
+
+    }});
+
+
+    let area = 0;
+
+    for (
+        let i = 0;
+        i < xy.length;
+        i++
+    ) {{
+
+        let j =
+            (i + 1) %
+            xy.length;
+
+        area +=
+            xy[i].x *
+            xy[j].y -
+            xy[j].x *
+            xy[i].y;
+
+    }}
+
+
+    area =
+        Math.abs(area) / 2;
+
+
+    // ====================================================
+    // แปลงหน่วย
+    // ====================================================
+
+    let squareWah =
+        area / 4;
+
+    let rai =
+        Math.floor(
+            squareWah / 400
+        );
+
+    let remain =
+        squareWah -
+        (rai * 400);
+
+    let ngan =
+        Math.floor(
+            remain / 100
+        );
+
+    let wah =
+        remain -
+        (ngan * 100);
+
+    let raiDecimal =
+        area / 1600;
+
+
+    // ====================================================
+    // ส่งข้อมูลออก
+    // ====================================================
+
+    document.getElementById(
+        "area-result"
+    ).innerHTML =
+
+        "<b>📐 พื้นที่แปลง</b><br>" +
+
+        area.toFixed(2) +
+        " ตารางเมตร<br><br>" +
+
+        "<b>" +
+
+        rai +
+        " ไร่ " +
+
+        ngan +
+        " งาน " +
+
+        wah.toFixed(2) +
+        " ตารางวา" +
+
+        "</b><br><br>" +
+
+        "เท่ากับ " +
+
+        raiDecimal.toFixed(4) +
+
+        " ไร่";
+
+
+    document.getElementById(
+        "price-plow"
+    ).innerHTML =
+
+        (
+            raiDecimal *
+            {PLOW_PRICE}
+        ).toFixed(2) +
+        " บาท";
+
+
+    document.getElementById(
+        "price-rotary"
+    ).innerHTML =
+
+        (
+            raiDecimal *
+            {ROTARY_PRICE}
+        ).toFixed(2) +
+        " บาท";
+
+
+    document.getElementById(
+        "price-total"
+    ).innerHTML =
+
+        (
+            raiDecimal *
+            ({PLOW_PRICE} + {ROTARY_PRICE})
+        ).toFixed(2) +
+        " บาท";
+
+}}
+
+
+</script>
+
+
+<div style="
+    padding:12px;
+    margin-top:10px;
+    background:#f5f5f5;
+    border-radius:12px;
+">
+
+<div id="area-result">
+    📐 ยังไม่ได้วัดพื้นที่
+</div>
+
+<hr>
+
+<div>
+    🚜 ไถนา {PLOW_PRICE} บาท/ไร่ :
+    <b id="price-plow">0.00 บาท</b>
+</div>
+
+<div>
+    🔄 ปั่นดิน {ROTARY_PRICE} บาท/ไร่ :
+    <b id="price-rotary">0.00 บาท</b>
+</div>
+
+<hr>
+
+<div style="
+    font-size:20px;
+    font-weight:bold;
+">
+
+🚜🔄 ไถ + ปั่น :
+<span id="price-total">
+0.00 บาท
+</span>
+
+</div>
+
+</div>
+
+</body>
+</html>
+"""
+
+components.html(
+    html_code,
+    height=850,
+    scrolling=False
+)
+
+
+# =========================================================
+# ราคาค่าบริการ
+# =========================================================
+
+st.markdown("---")
+
+st.subheader("💰 อัตราค่าบริการ")
+
+col1, col2, col3 = st.columns(3)
 
 with col1:
-    if st.button(
-        "📍 เริ่มวัดแปลง",
-        use_container_width=True
-    ):
-        st.session_state.measuring = True
-        st.session_state.points = []
-        st.rerun()
+    st.metric(
+        "🚜 ไถนา",
+        "250 บาท / ไร่"
+    )
 
 with col2:
-    if st.button(
-        "🗑️ ล้างจุด / เริ่มใหม่",
-        use_container_width=True
-    ):
-        st.session_state.points = []
-        st.session_state.measuring = False
-        st.rerun()
+    st.metric(
+        "🔄 ปั่นดิน",
+        "350 บาท / ไร่"
+    )
 
-
-# =========================================================
-# คำแนะนำ
-# =========================================================
-if st.session_state.measuring:
-    st.info(
-        "👆 แตะบนแผนที่ตามมุมแปลงนา "
-        "อย่างน้อย 3 จุด แล้วกดปุ่มหยุดวัด"
+with col3:
+    st.metric(
+        "🚜🔄 ไถ + ปั่น",
+        "600 บาท / ไร่"
     )
 
 
 # =========================================================
-# สร้างแผนที่
+# วิธีใช้
 # =========================================================
-m = folium.Map(
-    location=st.session_state.map_center,
-    zoom_start=16,
-    control_scale=True,
-    tiles=None
-)
-
-# แผนที่ถนน
-folium.TileLayer(
-    tiles="OpenStreetMap",
-    name="แผนที่ถนน",
-    control=True
-).add_to(m)
-
-# ภาพดาวเทียม Esri
-folium.TileLayer(
-    tiles=(
-        "https://server.arcgisonline.com/"
-        "ArcGIS/rest/services/World_Imagery/"
-        "MapServer/tile/{z}/{y}/{x}"
-    ),
-    attr="Esri",
-    name="🛰️ ภาพดาวเทียม",
-    overlay=False,
-    control=True
-).add_to(m)
-
-folium.LayerControl().add_to(m)
-
-
-# =========================================================
-# แสดงจุดที่ผู้ใช้เลือก
-# =========================================================
-for i, point in enumerate(st.session_state.points):
-
-    folium.Marker(
-        location=point,
-        popup=f"จุดที่ {i + 1}",
-        tooltip=f"จุด {i + 1}",
-        icon=folium.DivIcon(
-            html=f"""
-            <div style="
-                font-size:14px;
-                font-weight:bold;
-                color:white;
-                background:#d32f2f;
-                border-radius:50%;
-                width:28px;
-                height:28px;
-                text-align:center;
-                line-height:28px;
-                border:2px solid white;
-            ">
-            {i + 1}
-            </div>
-            """
-        )
-    ).add_to(m)
-
-
-# =========================================================
-# วาดเส้นเชื่อม
-# =========================================================
-if len(st.session_state.points) >= 2:
-
-    folium.PolyLine(
-        st.session_state.points,
-        color="red",
-        weight=4,
-        opacity=0.9
-    ).add_to(m)
-
-
-# =========================================================
-# วาดพื้นที่
-# =========================================================
-if len(st.session_state.points) >= 3:
-
-    folium.Polygon(
-        locations=st.session_state.points,
-        color="red",
-        weight=3,
-        fill=True,
-        fill_color="red",
-        fill_opacity=0.25
-    ).add_to(m)
-
-
-# =========================================================
-# แสดงแผนที่
-# =========================================================
-map_data = st_folium(
-    m,
-    width=None,
-    height=600,
-    use_container_width=True,
-    returned_objects=[
-        "last_clicked"
-    ]
-)
-
 
-# =========================================================
-# รับจุดจากการคลิก
-# =========================================================
-if st.session_state.measuring:
+with st.expander("📖 วิธีใช้"):
 
-    clicked = map_data.get("last_clicked")
+    st.markdown("""
+### 1️⃣ เปิด GPS
 
-    if clicked:
+เมื่อเปิดแอป โทรศัพท์จะถามว่า
 
-        lat = clicked.get("lat")
-        lon = clicked.get("lng")
+**อนุญาตให้เว็บไซต์เข้าถึงตำแหน่งหรือไม่**
 
-        if lat is not None and lon is not None:
+ให้กด **อนุญาต**
 
-            new_point = (lat, lon)
+จุด GPS สีน้ำเงินจะแสดงตำแหน่งของคุณ
 
-            # ป้องกันการคลิกจุดเดิมซ้ำ
-            is_duplicate = False
+---
 
-            for p in st.session_state.points:
+### 2️⃣ เลือกภาพดาวเทียม
 
-                if (
-                    abs(p[0] - lat) < 0.000001
-                    and
-                    abs(p[1] - lon) < 0.000001
-                ):
-                    is_duplicate = True
-                    break
+กดปุ่ม Layer ที่มุมแผนที่ แล้วเลือก
 
-            if not is_duplicate:
+**🛰️ ดาวเทียม**
 
-                st.session_state.points.append(new_point)
+เพื่อดูแปลงนา
 
-                st.rerun()
+---
 
+### 3️⃣ วาดแปลงนา
 
-# =========================================================
-# ปุ่มหยุดวัด
-# =========================================================
-if st.session_state.measuring:
+กดเครื่องมือ **รูปหลายเหลี่ยม (Polygon)**
 
-    if len(st.session_state.points) >= 3:
+แล้วแตะตามมุมแปลงนา
 
-        if st.button(
-            "✅ หยุดวัดและคำนวณพื้นที่",
-            use_container_width=True
-        ):
-            st.session_state.measuring = False
-            st.rerun()
+เมื่อกลับมาที่จุดแรก จะได้พื้นที่แปลง
 
+---
 
-# =========================================================
-# ผลการวัด
-# =========================================================
-if len(st.session_state.points) >= 3:
+### 4️⃣ แก้แนวเขต
 
-    area_m2 = polygon_area_m2(
-        st.session_state.points
-    )
+ใช้เครื่องมือ **Edit**
 
-    rai, ngan, square_wah, rai_decimal = convert_area(
-        area_m2
-    )
+แล้วลากจุดแต่ละจุดไปยังตำแหน่งที่ต้องการ
 
-    st.markdown("---")
+พื้นที่จะถูกคำนวณใหม่
 
-    st.subheader("📐 ผลการวัดแปลงนา")
+---
 
-    col1, col2, col3 = st.columns(3)
+### 5️⃣ ดูเงินค่าจ้าง
 
-    with col1:
-        st.metric(
-            "พื้นที่",
-            f"{area_m2:,.2f} ตร.ม."
-        )
+ระบบจะคำนวณให้ทันที
 
-    with col2:
-        st.metric(
-            "พื้นที่ไทย",
-            f"{rai} ไร่ {ngan} งาน"
-        )
+**ไถ = 250 บาท/ไร่**
 
-    with col3:
-        st.metric(
-            "ตารางวา",
-            f"{square_wah:,.2f}"
-        )
+**ปั่น = 350 บาท/ไร่**
 
-    st.markdown(
-        f"""
-        <div class="result-box">
-            <div style="text-align:center;">
-                <div>🌾 พื้นที่แปลงนี้</div>
-                <div class="big-number">
-                    {rai} ไร่ {ngan} งาน {square_wah:,.2f} ตารางวา
-                </div>
-                <div>
-                    เท่ากับ {rai_decimal:,.4f} ไร่
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+**ไถ + ปั่น = 600 บาท/ไร่**
 
+---
 
-    # =====================================================
-    # เลือกประเภทงาน
-    # =====================================================
-    st.subheader("🚜 คิดค่าจ้าง")
+### 📏 หน่วยพื้นที่ไทย
 
-    service = st.radio(
-        "เลือกงาน",
-        [
-            "ไถนา",
-            "ปั่นดิน",
-            "ไถนา + ปั่นดิน"
-        ],
-        horizontal=False
-    )
+**1 ไร่ = 4 งาน**
 
-    price = calculate_price(
-        rai_decimal,
-        service
-    )
+**1 งาน = 100 ตารางวา**
 
-    # =====================================================
-    # แสดงราคา
-    # =====================================================
-    if service == "ไถนา":
-        rate_text = "250 บาท / ไร่"
+**1 ไร่ = 400 ตารางวา**
 
-    elif service == "ปั่นดิน":
-        rate_text = "350 บาท / ไร่"
+**1 ไร่ = 1,600 ตารางเมตร**
+""")
 
-    else:
-        rate_text = "600 บาท / ไร่"
-
-
-    st.markdown(
-        f"""
-        <div class="result-box">
-            <div style="text-align:center;">
-                <div>🚜 งานที่เลือก</div>
-                <h2>{service}</h2>
-
-                <div>
-                    อัตราค่าบริการ {rate_text}
-                </div>
-
-                <hr>
-
-                <div>💰 ยอดเงินที่ต้องจ่าย</div>
-
-                <div class="money">
-                    {price:,.2f} บาท
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-    # =====================================================
-    # รายละเอียดการคิดเงิน
-    # =====================================================
-    st.subheader("🧾 รายละเอียด")
-
-    st.write(
-        f"พื้นที่ = **{rai_decimal:,.4f} ไร่**"
-    )
-
-    if service == "ไถนา":
-
-        st.write(
-            f"ค่าจ้าง = {rai_decimal:,.4f} × 250"
-        )
-
-    elif service == "ปั่นดิน":
-
-        st.write(
-            f"ค่าจ้าง = {rai_decimal:,.4f} × 350"
-        )
-
-    else:
-
-        st.write(
-            f"ค่าจ้าง = {rai_decimal:,.4f} × (250 + 350)"
-        )
-
-    st.success(
-        f"💵 ลูกค้าต้องจ่าย **{price:,.2f} บาท**"
-    )
-
-
-# =========================================================
-# ยังไม่มีพื้นที่
-# =========================================================
-else:
-
-    st.markdown("---")
-
-    st.info(
-        "📍 กด **เริ่มวัดแปลง** แล้วแตะตามมุมที่ดินบนแผนที่ "
-        "อย่างน้อย 3 จุด"
-    )
-
-    st.markdown(
-        """
-        ### 💰 ราคาที่ตั้งไว้
-
-        | งาน | ราคา |
-        |---|---:|
-        | 🚜 ไถนา | **250 บาท/ไร่** |
-        | 🔄 ปั่นดิน | **350 บาท/ไร่** |
-        | 🚜🔄 ไถ + ปั่น | **600 บาท/ไร่** |
-
-        **หน่วยพื้นที่**
-        
-        - 1 ไร่ = 4 งาน
-        - 1 งาน = 100 ตารางวา
-        - 1 ไร่ = 400 ตารางวา
-        - 1 ไร่ = 1,600 ตารางเมตร
-        """
-    )
-
-
-# =========================================================
-# ส่วนท้าย
-# =========================================================
-st.markdown("---")
 
 st.caption(
     "🚜 เครื่องมือวัดพื้นที่นา | "
